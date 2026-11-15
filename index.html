@@ -1483,6 +1483,7 @@ const PENTA = [0,2,4,7,9];
 const CHORDS = [[0,4,7],[9,12,16],[5,9,12],[7,11,14]], ARP = [0,1,2,1,0,2,1,2];
 const Snd = {
   ac:null, ready:false, muted: store.get('sealrush.mute','0')==='1', padTarget:0.05, bell:4, nextT:0, stepI:0,
+  uw:0, uwBloopT:0.45,
   init(){
     if(this.ready) return;
     const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
@@ -1498,7 +1499,14 @@ const Snd = {
     const src = ac.createBufferSource(); src.buffer=buf; src.loop=true;
     this.windLP = ac.createBiquadFilter(); this.windLP.type='lowpass'; this.windLP.frequency.value=380; this.windLP.Q.value=0.7;
     this.windGain = ac.createGain(); this.windGain.gain.value=0;
-    src.connect(this.windLP); this.windLP.connect(this.windGain); this.windGain.connect(this.master); src.start();
+    src.connect(this.windLP); this.windLP.connect(this.windGain); this.windGain.connect(this.master);
+    this.uwLP = ac.createBiquadFilter(); this.uwLP.type='lowpass'; this.uwLP.frequency.value=220; this.uwLP.Q.value=1.2;
+    this.uwGain = ac.createGain(); this.uwGain.gain.value=0;
+    src.connect(this.uwLP); this.uwLP.connect(this.uwGain); this.uwGain.connect(this.master);
+    src.start();
+    const uwSub = ac.createOscillator(); uwSub.type='sine'; uwSub.frequency.value=58;
+    this.uwSubGain = ac.createGain(); this.uwSubGain.gain.value=0;
+    uwSub.connect(this.uwSubGain); this.uwSubGain.connect(this.master); uwSub.start();
     const plp = ac.createBiquadFilter(); plp.type='lowpass'; plp.frequency.value=700; plp.Q.value=0.5;
     this.padGain = ac.createGain(); this.padGain.gain.value=0; plp.connect(this.padGain); this.padGain.connect(this.master);
     [110,164.81,196].forEach((f,i)=>{
@@ -1526,20 +1534,56 @@ const Snd = {
   ok(){ return this.ready && !this.muted && this.ac.state==='running'; },
   sweep(f0,f1,dur,peak,type){ if(!this.ok()) return; const t=this.ac.currentTime; this.tone(f0,t,0.006,dur,peak,type).frequency.exponentialRampToValueAtTime(f1,t+dur); },
   chord(fs,gap,dur,peak){ if(!this.ok()) return; const t=this.ac.currentTime; fs.forEach((f,i)=>this.tone(f,t+i*gap,0.006,dur,peak,'triangle')); },
-  coin(combo,gold){            // 连击越高，音越往五声音阶上爬
+  bloop(mul,delay){
+    if(!this.ok()) return;
+    const t=this.ac.currentTime+(delay||0), f=(330+Math.random()*220)*(mul||1);
+    this.tone(f,t,0.004,0.075,0.055,'sine').frequency.exponentialRampToValueAtTime(f*2.1,t+0.07);
+  },
+  coin(combo,gold){            // 连击越高，音越往五声音阶上爬；水下呈水滴气泡音色
     if(!this.ok()) return;
     const i=Math.min(combo-1,12), f=523.25*Math.pow(2,(12*Math.floor(i/5)+PENTA[i%5])/12), t=this.ac.currentTime;
-    this.tone(f,t,0.004,0.13,0.15,'triangle'); this.tone(f*1.5,t+0.05,0.004,0.16,0.08,'sine');
-    if(gold) this.tone(f*2,t+0.1,0.004,0.3,0.1,'triangle');
+    if(this.uw>0){
+      this.tone(f*0.86,t,0.004,0.12,0.14,'sine').frequency.exponentialRampToValueAtTime(f*1.04,t+0.045);
+      this.tone(f*1.5,t+0.045,0.004,0.13,0.06,'sine');
+      if(gold) this.tone(f*2,t+0.09,0.004,0.22,0.075,'sine');
+    }else{
+      this.tone(f,t,0.004,0.13,0.15,'triangle'); this.tone(f*1.5,t+0.05,0.004,0.16,0.08,'sine');
+      if(gold) this.tone(f*2,t+0.1,0.004,0.3,0.1,'triangle');
+    }
   },
-  jump(){ this.sweep(520,1040,0.1,0.11,'sine'); if(this.ok()) this.hiss(this.ac.currentTime,500,2400,0.22,0.09,0.9); },   // “啾”
-  dive(){ this.sweep(980,300,0.2,0.09,'sine'); },
+  jump(inWater,fromDeep){
+    if(!this.ok()) return; const t=this.ac.currentTime;
+    if(inWater){
+      this.tone(260,t,0.005,0.14,0.12,'sine').frequency.exponentialRampToValueAtTime(fromDeep?860:740,t+0.13);
+      this.hiss(t,360,1400,0.2,0.09,1.1);
+      this.bloop(fromDeep?0.85:1.15,0.02);
+    }else{
+      this.sweep(520,1040,0.1,0.11,'sine'); this.hiss(t,500,2400,0.22,0.09,0.9);
+    }
+  },
+  dive(inWater){
+    if(!this.ok()) return; const t=this.ac.currentTime;
+    if(inWater){
+      this.tone(420,t,0.006,0.24,0.14,'sine').frequency.exponentialRampToValueAtTime(115,t+0.23);
+      this.hiss(t,600,140,0.22,0.1,0.75);
+      this.bloop(0.75,0.03); this.bloop(0.95,0.1);
+    }else{
+      this.sweep(980,300,0.2,0.09,'sine');
+    }
+  },
   land(){ this.sweep(150,70,0.16,0.2,'sine'); if(this.ok()) this.hiss(this.ac.currentTime,900,220,0.16,0.1,0.7); },
   slam(){ this.sweep(130,42,0.32,0.34,'sine'); if(this.ok()) this.hiss(this.ac.currentTime,1200,120,0.34,0.26,0.6); },
-  splash(big){
+  splash(big,plunge){
     if(!this.ok()) return; const t=this.ac.currentTime;
-    this.hiss(t, big?2400:1800, 320, big?0.36:0.24, big?0.28:0.18, 0.85);
-    this.tone(big?380:460,t,0.005,0.14,0.11,'sine').frequency.exponentialRampToValueAtTime(140,t+0.14);
+    this.hiss(t, big?2400:1800, plunge?240:320, big?0.38:0.26, big?0.28:0.18, 0.85);
+    this.tone(plunge?340:(big?380:460),t,0.005,0.16,0.12,'sine').frequency.exponentialRampToValueAtTime(plunge?95:140,t+0.15);
+    if(plunge || big){ this.bloop(0.85,0.05); this.bloop(1.15,0.12); }
+  },
+  breach(flip){
+    if(!this.ok()) return; const t=this.ac.currentTime;
+    this.hiss(t,450,3400,flip?0.34:0.24,flip?0.22:0.15,0.9);
+    this.tone(320,t,0.005,0.13,0.11,'sine').frequency.exponentialRampToValueAtTime(flip?980:840,t+0.12);
+    this.bloop(1.35,0.04);
   },
   bubble(){
     if(!this.ok()) return; const t=this.ac.currentTime;
@@ -1554,9 +1598,25 @@ const Snd = {
     if(!this.ok()) return; const t=this.ac.currentTime;
     this.tone(240,t,0.006,0.18,0.16,'sine').frequency.exponentialRampToValueAtTime(420,t+0.15);
   },
-  smash(){ if(!this.ok()) return; const t=this.ac.currentTime; this.hiss(t,5200,1400,0.2,0.2,0.8); this.tone(1568,t,0.003,0.12,0.07,'triangle'); this.tone(2093,t+0.03,0.003,0.16,0.06,'triangle'); },
-  near(){ if(this.ok()) this.hiss(this.ac.currentTime,700,3200,0.14,0.08,1.4); },
-  hit(){ this.sweep(430,170,0.26,0.2,'triangle'); if(this.ok()) this.hiss(this.ac.currentTime,1400,160,0.3,0.22,0.6); },
+  smash(){
+    if(!this.ok()) return; const t=this.ac.currentTime;
+    if(this.uw>0){
+      this.hiss(t,2200,320,0.24,0.2,0.9);
+      this.tone(980,t,0.004,0.14,0.08,'triangle'); this.tone(1320,t+0.03,0.004,0.16,0.06,'sine');
+      this.bloop(0.9,0.05);
+    }else{
+      this.hiss(t,5200,1400,0.2,0.2,0.8); this.tone(1568,t,0.003,0.12,0.07,'triangle'); this.tone(2093,t+0.03,0.003,0.16,0.06,'triangle');
+    }
+  },
+  near(){ if(this.ok()) this.hiss(this.ac.currentTime,this.uw>0?280:700,this.uw>0?1100:3200,this.uw>0?0.16:0.14,this.uw>0?0.085:0.08,this.uw>0?1.6:1.4); },
+  hit(){
+    if(this.uw>0){
+      this.sweep(260,72,0.28,0.24,'sine');
+      if(this.ok()){ this.hiss(this.ac.currentTime,650,95,0.3,0.22,0.7); this.bloop(0.65,0.04); }
+    }else{
+      this.sweep(430,170,0.26,0.2,'triangle'); if(this.ok()) this.hiss(this.ac.currentTime,1400,160,0.3,0.22,0.6);
+    }
+  },
   ballCatch(){ this.chord([659.25,880,1174.66],0.075,0.32,0.14); },
   ballDrop(){ this.chord([659.25,523.25,392],0.09,0.26,0.12); },
   pad(){ this.chord([523.25,783.99,1046.5],0.045,0.36,0.11); },
@@ -1573,8 +1633,12 @@ const Snd = {
   },
   frame(dt,v,playing,fever,zen,uwState){
     if(!this.ready) return;
-    this.windGain.gain.value = damp(this.windGain.gain.value, uwState===2?0.004:uwState===1?0.008:(0.014+v*0.002), 3, dt);
+    this.uw = uwState;
+    this.windGain.gain.value = damp(this.windGain.gain.value, uwState===2?0.002:uwState===1?0.006:(0.014+v*0.002), 3, dt);
     this.windLP.frequency.value = damp(this.windLP.frequency.value, uwState===2?160:uwState===1?260:(280+v*20), 3, dt);
+    this.uwGain.gain.value = damp(this.uwGain.gain.value, uwState===2?(0.042+v*0.0008):uwState===1?(0.026+v*0.0006):0, 5, dt);
+    this.uwLP.frequency.value = damp(this.uwLP.frequency.value, uwState===2?155:(260+v*3), 5, dt);
+    this.uwSubGain.gain.value = damp(this.uwSubGain.gain.value, uwState===2?0.045:uwState===1?0.012:0, 4, dt);
     this.musLP.frequency.value = damp(this.musLP.frequency.value, uwState===2?720:uwState===1?2800:18000, 6, dt);
     this.padGain.gain.value = damp(this.padGain.gain.value, this.padTarget, 0.8, dt);
     if(!this.ok()) return;
@@ -1583,6 +1647,10 @@ const Snd = {
       if(this.nextT<now) this.nextT=now+0.05;
       const d=30/((zen?86:98)+clamp((v-20)/36,0,1)*30+(fever?14:0));
       while(this.nextT<now+0.14){ this.step(this.nextT,fever,zen); this.nextT+=d; }
+      if(uwState>0){
+        this.uwBloopT -= dt*(uwState===2?1.45:1.0);
+        if(this.uwBloopT<=0){ this.uwBloopT=0.28+Math.random()*0.55; this.bloop(uwState===2?0.78:1.05); }
+      }
     }else{
       this.bell-=dt;
       if(this.bell<=0){ this.bell=5+Math.random()*7; const sc=[523.25,587.33,698.46,783.99,880]; this.tone(sc[(Math.random()*sc.length)|0],now,0.35,3.4,0.03,'sine'); }
@@ -2077,9 +2145,9 @@ function tryDive(){
     S.superSlam = S.flip && (S.airT/Math.max(0.2,S.airDur) > 0.45);
     S.slam=true; S.flip=false; S.vy = Math.min(S.vy,-4)-18;
     seal.flip.rotation.x = wrapPi(seal.flip.rotation.x);
-    kick(3); Snd.dive();
+    kick(3); Snd.dive(false);
   }else if(S.inWater && !S.air && S.deepT < DEEP_DUR*0.55){
-    S.deepT=DEEP_DUR; kick(-4.5); Snd.dive();
+    S.deepT=DEEP_DUR; kick(-4.5); Snd.dive(true);
     emitBubbles(S.x, S.y, S.z, 14);
   }
 }
@@ -2092,13 +2160,13 @@ function tryJump(){
       S.deepT=0; S.air=true; S.airT=0; S.flip=fromDeep; S.slam=false; S.superSlam=false; S.rebound=false; S.breached=false;
       const vyRel = fromDeep ? 20.8 : 17.7;
       S.vy = vyRel - vEff*GRADE; S.airDur = 2*vyRel/GRAV;
-      kick(fromDeep?6:5); if(fromDeep) J.happyT=0.9; J.mouthT=0.3; Snd.jump();
+      kick(fromDeep?6:5); if(fromDeep) J.happyT=0.9; J.mouthT=0.3; Snd.jump(true,fromDeep);
       emitBubbles(S.x, S.y, S.z, fromDeep?16:10);
     }else{                                                      // 雪地起跳（按坡度补偿）
       S.air=true; S.airT=0; S.flip=false; S.slam=false; S.superSlam=false; S.rebound=false; S.breached=true;
       const vyRel = 13.8;
       S.vy = vyRel - vEff*GRADE; S.airDur = 2*vyRel/GRAV;
-      kick(5); J.mouthT=0.3; Snd.jump();
+      kick(5); J.mouthT=0.3; Snd.jump(false,false);
       emitSpray(S.x, S.y+0.1, S.z, 16, 1.2);
     }
   }else if(!S.slam && !S.rebound && S.airT>0.1){                // 空中再按一次：肚皮砸地 / 鱼雷入水
@@ -2401,7 +2469,7 @@ function updateSeal(dt,t){
         const isSup = S.superSlam;
         S.slam=false; S.superSlam=false; S.air=false; S.flip=false; S.rebound=false; S.vy=0; S.airT=0;
         S.deepT=DEEP_DUR;
-        kick(-10); S.shake=Math.max(S.shake,0.55); Snd.splash(true);
+        kick(-10); S.shake=Math.max(S.shake,0.55); Snd.splash(true,true);
         emitWaterSplash(S.x,w.waterY,S.z,46,1.9); ring(S.x,w.waterY,S.z,isSup?7.5:6.2,0xA9DDF2,0.5,0.65);
         emitBubbles(S.x,S.y-0.3,S.z,18);
         if(play) slamBlast(isSup?8.2:SLAM_R, isSup, true);
@@ -2411,7 +2479,7 @@ function updateSeal(dt,t){
           if(play){ const b=Math.round(70*S.combo); S.score+=b; addFever(0.12); Snd.flip(); popup('花式入水 +'+b,'water'); }
         }
         S.air=false; S.flip=false; S.rebound=false; S.superSlam=false; S.vy=0; S.airT=0;
-        kick(-5); Snd.splash(false);
+        kick(-5); Snd.splash(false,true);
         emitWaterSplash(S.x,w.waterY,S.z,28,1.35); ring(S.x,w.waterY,S.z,3.8,0xDDF6FF,0.42,0.55,true);
         emitBubbles(S.x,S.y-0.25,S.z,14);
       }
@@ -2424,7 +2492,7 @@ function updateSeal(dt,t){
       S.airT += dt; S.vy -= GRAV*dt; S.y += S.vy*dt;
       if(!S.breached && (S.vy + v*GRADE) > 0 && S.y >= w.waterY - 0.12){
         S.breached = true;
-        Snd.splash(S.flip);
+        Snd.breach(S.flip);
         emitWaterSplash(S.x, w.waterY, S.z, S.flip?30:22, S.flip?1.45:1.15);
         ring(S.x, w.waterY, S.z, S.flip?4.2:3.0, 0xDDF6FF, 0.42, 0.55, !S.flip);
         if(play) popup(S.flip?'破水空翻':'破水跃出', 'water');
@@ -2435,7 +2503,7 @@ function updateSeal(dt,t){
         if(S.slam){
           const isSup = S.superSlam;
           S.slam=false; S.superSlam=false; S.deepT=DEEP_DUR;
-          kick(-10); S.shake=Math.max(S.shake,0.5); Snd.splash(true);
+          kick(-10); S.shake=Math.max(S.shake,0.5); Snd.splash(true,true);
           emitWaterSplash(S.x,w.waterY,S.z,42,1.8); ring(S.x,w.waterY,S.z,6.0,0xA9DDF2,0.5,0.65);
           emitBubbles(S.x,S.y-0.25,S.z,18);
           if(play) slamBlast(SLAM_R, isSup, true);
@@ -2444,7 +2512,7 @@ function updateSeal(dt,t){
             seal.flip.rotation.x -= TAU;
             if(play){ const b=Math.round(65*S.combo); S.score+=b; addFever(0.1); Snd.flip(); popup('空翻入水 +'+b,'water'); J.happyT=0.8; }
           }
-          Snd.splash(false); emitWaterSplash(S.x,w.waterY,S.z,22,1.15); ring(S.x,w.waterY,S.z,3.0,0xDDF6FF,0.38,0.48,true);
+          Snd.splash(false,true); emitWaterSplash(S.x,w.waterY,S.z,22,1.15); ring(S.x,w.waterY,S.z,3.0,0xDDF6FF,0.38,0.48,true);
           emitBubbles(S.x,S.y-0.2,S.z,12);
           kick(-4);
         }
@@ -2484,7 +2552,7 @@ function updateSeal(dt,t){
         const popVy = wasDeep ? 11.4 : 8.4;
         S.air=true; S.airT=0; S.flip=false; S.slam=false; S.superSlam=false; S.rebound=false;
         S.vy = popVy - v*GRADE; S.airDur = 2*popVy/GRAV;
-        kick(4); Snd.splash(false); emitWaterSplash(S.x,S.y,S.z,24,1.25);
+        kick(4); Snd.breach(wasDeep); emitWaterSplash(S.x,S.y,S.z,24,1.25);
         if(play) popup('重返雪坡','water');
       }
     }
