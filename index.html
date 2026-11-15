@@ -304,11 +304,11 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
   <div id="combo"><b>×2</b><span class="combo-bar"><i></i></span></div>
   <div id="mid-huds">
     <div id="ballhud">金球平衡 <span class="wob" id="ui-wob"><i></i></span></div>
-    <div id="divehud">水下潜泳 <span class="wob" id="ui-dive"><i></i></span></div>
+    <div id="divehud">深海下潜 <span class="wob" id="ui-dive"><i></i></span></div>
   </div>
   <div id="toast"></div>
   <div class="hud-bl"><span class="biome" id="ui-biome">极地晴日</span><span class="dot"></span><span><b id="ui-spd">0</b> km/h</span></div>
-  <div id="hint">A / D 转向 · 空格 跳 · 空中再按或 S 砸地/潜泳</div>
+  <div id="hint">A / D 转向 · 空格 起跳 / 破水跃出 · 空中砸地 · 水中 S 深潜</div>
 </div>
 
 <button id="jumpbtn" aria-label="跳跃">跳</button>
@@ -322,17 +322,17 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
     <div class="wrap">
       <p class="eyebrow">3D 无尽雪坡与冰海滑行</p>
       <h1>海豹冲冲冲</h1>
-      <p class="lede">肚皮贴雪往下冲，跃入冰海畅游。攒满狂热撞碎冰晶，空中再按可砸地或潜泳。</p>
+      <p class="lede">肚皮贴雪往下冲，纵身潜入广阔冰海。水底自由穿行，蓄力破水跃出，攒满狂热撞碎冰晶。</p>
       <div class="skin-bar" aria-label="海豹装扮">
         <div class="skin-meta"><span class="skin-lbl">装扮</span><span class="skin-name" id="skin-name">暖橙</span></div>
         <div class="skin-list" id="skin-dots"></div>
       </div>
       <div class="modes">
-        <button class="mode" id="mode-rush" data-mode="rush" aria-pressed="true"><b>冲刺</b><span>冰晶、雪球、浮冰与暗礁，3 颗心</span></button>
+        <button class="mode" id="mode-rush" data-mode="rush" aria-pressed="true"><b>冲刺</b><span>冰晶、浮冰、悬冰与冰礁，3 颗心</span></button>
         <button class="mode" id="mode-zen" data-mode="zen" aria-pressed="false"><b>禅意</b><span>没有障碍，只有雪、冰海、小鱼和极光</span></button>
       </div>
       <button class="go" id="btn-go">开始下滑</button>
-      <p class="controls" id="ctl-text">A / D 或 ← → 转向，空格跳跃 / 破水，空中再按或 S 砸地 / 潜泳<br>擦边过障有奖励，M 键静音 · 轻点海豹可互动</p>
+      <p class="controls" id="ctl-text">A / D 或 ← → 转向，空格跳跃 / 破水跃出，空中再按或 S 砸地，水中 S 深潜<br>擦边过障有奖励，M 键静音 · 轻点海豹可互动</p>
       <p class="best">最高分 <b id="ui-best2">0</b></p>
     </div>
   </div>
@@ -433,17 +433,17 @@ const store = {
    ============================================================ */
 const CHUNK_LEN = 70, VARIANTS = 3, PHASES = [0, 2.17, 4.41];
 const TRACK_HALF = 11, GRADE = 0.105, BANK_H = 9, GRAV = 34;
-const WATER_DEPTH = 4.3, WATER_OFF = -0.55;
+const WATER_DEPTH = 5.2, WATER_OFF = -0.55;
 const LANES = [-8.6,-5.2,-1.75,1.75,5.2,8.6];
 
 const chunkK    = z => Math.ceil(z/CHUNK_LEN);
 const variantOf = k => ((k%VARIANTS)+VARIANTS)%VARIANTS;
 function waterRole(k){
-  if(k > -4) return 'snow';
-  const n = -k - 4, cycle = Math.floor(n/8), step = n%8, midLen = cycle>=2 ? 2 : 1;
+  if(k > -6) return 'snow';
+  const n = -k - 6, step = n % 16;
   if(step === 0) return 'entry';
-  if(step <= midLen) return 'mid';
-  if(step === midLen + 1) return 'exit';
+  if(step <= 6)  return 'mid';
+  if(step === 7) return 'exit';
   return 'snow';
 }
 function carveZ(role, lz){
@@ -857,7 +857,13 @@ const GEO_WRING = (()=>{                      // 冰晶水流环：纤细多面�
   }
   return merge(P);
 })();
-const GEO_SNOWBALL = ico(1,2);
+const GEO_HANGICE = merge([                   // 冰崖悬冰：水上雪帽 + 跨水面冰块 + 下垂深青冰锥，需横向闪避或 S 深潜穿过
+  [ico(1,0), '#F2FAFE', TRS(0,0.34,0, 1.82,0.36,1.32, 0.04,0.22,0)],
+  [ico(1,0), '#80D8EC', TRS(0,-0.32,0, 1.70,0.56,1.18, -0.04,0.72,0.03)],
+  [cone(0.95,1.88,6), '#2993B6', TRS(0,-1.40,0, 1.08,1.0,0.82, Math.PI,0.24,0)],
+  [cone(0.54,1.34,6), '#48B3D2', TRS(-0.84,-1.14,0.10, 0.94,1.0,0.78, Math.PI,0.8,0.14)],
+  [cone(0.52,1.24,6), '#1B7697', TRS(0.86,-1.08,-0.08, 0.94,1.0,0.78, Math.PI,1.4,-0.14)]
+]);
 const GEO_CRYSTAL = (()=>{                    // 冰晶簇：底在 y=0，尖在 y=1
   const P=[], prism=(r,h,tip,c1,c2,M)=>{
     P.push([cyl(r,r*1.1,h,6), c1, M.clone().multiply(TRS(0,h/2,0))]);
@@ -932,7 +938,6 @@ const MAT_VC      = new THREE.MeshStandardMaterial({vertexColors:true, roughness
 const MAT_VCF     = new THREE.MeshStandardMaterial({vertexColors:true, roughness:0.9, flatShading:true});
 const MAT_BERG    = new THREE.MeshStandardMaterial({color:0xD3E6F3, roughness:0.55, flatShading:true});
 const MAT_MOUND   = new THREE.MeshStandardMaterial({color:0xEEF5FA, roughness:0.95});
-const MAT_SNOWBALL= new THREE.MeshStandardMaterial({color:0xF4F9FF, roughness:0.85, flatShading:true});
 const MAT_CRYSTAL = new THREE.MeshStandardMaterial({vertexColors:true, roughness:0.12, metalness:0.05, transparent:true, opacity:0.88, flatShading:true});
 const MAT_RAMP    = new THREE.MeshStandardMaterial({color:0xD4EEF4, emissive:0x2E8F86, emissiveIntensity:0.3, roughness:0.6, flatShading:true, side:THREE.DoubleSide});
 const MAT_PAD     = new THREE.MeshBasicMaterial({map:TEX_PAD, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2, polygonOffsetUnits:-2});
@@ -945,12 +950,12 @@ function IM(geo,mat,cap,shadow){
   const m=new THREE.InstancedMesh(geo,mat,cap); m.count=0; m.frustumCulled=false; m.castShadow=!!shadow;
   m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.userData.cap=cap; scene.add(m); return m;
 }
-const FISH_CAP = 640, GOLD_CAP = 40, PENG_CAP = 70, SBALL_CAP = 36, FLOE_CAP = 80, REEF_CAP = 80, WRING_CAP = 32;
+const FISH_CAP = 640, GOLD_CAP = 40, PENG_CAP = 70, HANG_CAP = 48, FLOE_CAP = 80, REEF_CAP = 80, WRING_CAP = 40;
 const imRock    = IM(GEO_ROCK,     MAT_VCF,      130, true);
 const imFloe    = IM(GEO_FLOE,     MAT_VCF,      FLOE_CAP, false);
 const imReef    = IM(GEO_REEF,     MAT_VCF,      REEF_CAP, false);
+const imHang    = IM(GEO_HANGICE,  MAT_VCF,      HANG_CAP, false);
 const imWRing   = IM(GEO_WRING,    MAT_WRING,    WRING_CAP, false);
-const imSnowball= IM(GEO_SNOWBALL, MAT_SNOWBALL, SBALL_CAP, true);
 const imBerg    = IM(GEO_BERG,     MAT_BERG,     90,  false);
 const imMound   = IM(GEO_MOUND,    MAT_MOUND,    200, false);
 const imCrystal = IM(GEO_CRYSTAL,  MAT_CRYSTAL,  260, true);
@@ -1138,18 +1143,18 @@ const aura = new THREE.Mesh(new THREE.CircleGeometry(1,28).rotateX(-Math.PI/2),
 aura.visible=false; scene.add(aura);
 
 function animateSeal(dt,t){
-  const play=S.state==='play', over=S.state==='over', air=S.air, swim=S.inWater && !air, dive=swim && S.diving;
+  const play=S.state==='play', over=S.state==='over', air=S.air, uw=S.inWater && !air, deep=uw && S.deepT>0;
   // 身体：落地压扁、起跳拉长，贴地时跟着地面起伏，水中温柔摆动
   if(!air){
     const gv=(S.y-J.pgy)/dt; J.sv -= clamp(gv-J.pgv,-6,6)*0.12; J.pgv=gv;
-    if(!over) J.sv += Math.sin(t*(swim?11.5:8.5))*(dive?3.5:swim?5.5:8)*dt;
+    if(!over) J.sv += Math.sin(t*(deep?14:uw?10.5:8.5))*(deep?4.2:uw?4.8:8)*dt;
   }else J.pgv=0;
   J.pgy=S.y;
   J.sv += (((over?0.8:1)-J.s)*170 - J.sv*9)*dt;
   J.s = clamp(J.s+J.sv*dt, 0.5, 1.55);
   let sy=J.s;
   if(air) sy *= 1+clamp(S.vy*0.011,-0.1,0.16)+(S.slam?0.1:0);
-  else if(dive) sy *= 0.89;
+  else if(deep) sy *= 0.89;
   const sxz=1/Math.sqrt(sy);
   seal.jelly.scale.set(sxz,sy,sxz);
 
@@ -1158,9 +1163,9 @@ function animateSeal(dt,t){
   if(S.ball || attractLook.ballT>0) tp=0.75;
   else if(over) tp=-0.22;
   else if(air) tp=clamp(S.vy*0.02,-0.3,0.35);
-  else if(dive) tp=-0.10;
-  else if(swim) tp=0.16+Math.sin(t*11.5)*0.04;
-  if(play){ ty=-S.steer*0.55+(swim&&!dive?Math.sin(t*9)*0.06:0); tr=-S.steer*0.16; }
+  else if(deep) tp=-0.16;
+  else if(uw) tp=0.08+Math.sin(t*10.5)*0.04;
+  if(play){ ty=-S.steer*0.55+(uw&&!deep?Math.sin(t*8.5)*0.05:0); tr=-S.steer*0.16; }
   else if(S.state==='attract'){
     const w=wrapPi(Math.atan2(-(camera.position.x-S.x), -(camera.position.z-S.z)) - seal.root.rotation.y);
     const baseY = Math.abs(w)<1.9 ? clamp(w,-0.95,0.95) : 0;
@@ -1195,21 +1200,21 @@ function animateSeal(dt,t){
   seal.mouth.visible = J.mouth>0.06; seal.mouth.scale.set(0.6+J.mouth*0.4, Math.max(0.06,J.mouth), 1);
   seal.dizzy.visible = face===2; seal.dizzy.rotation.y += dt*7;
 
-  // 鳍、尾巴、围巾尾：水面交替划水 / 潜泳上下打水推进
-  const flapSpd = dive ? 15 : swim ? 12.5 : 8.5;
+  // 鳍、尾巴、围巾尾：水下优雅振鳍推进，深潜加快打水
+  const flapSpd = deep ? 15.5 : uw ? 11.5 : 8.5;
   for(const f of seal.flippers){
     const targ = air ? -0.95+Math.sin(t*22+f.s)*0.25
                : over ? 0.15
-               : dive ? -0.30+Math.sin(t*flapSpd+f.s*0.5)*0.30
-               : swim ? Math.sin(t*flapSpd+f.s*1.2)*0.48
+               : deep ? -0.26+Math.sin(t*flapSpd+f.s*0.35)*0.34
+               : uw   ? -0.20+Math.sin(t*flapSpd+f.s*0.4)*0.32
                : Math.sin(t*8.5+f.s*0.8)*0.24;
     f.a = damp(f.a, targ, 14, dt);
     f.piv.rotation.z = -f.s*(0.35+f.a);
-    const sweep = air ? -0.3 : dive ? (0.38+Math.sin(t*flapSpd+f.s*0.5)*0.24) : swim ? Math.sin(t*flapSpd+f.s*1.2)*0.52 : Math.sin(t*8.5+1.2)*0.18;
+    const sweep = air ? -0.3 : deep ? (0.38+Math.cos(t*flapSpd+f.s*0.35)*0.30) : uw ? (0.34+Math.cos(t*flapSpd+f.s*0.4)*0.30) : Math.sin(t*8.5+1.2)*0.18;
     f.piv.rotation.y = -f.s*(0.5+sweep);
   }
-  seal.tail.rotation.y = Math.sin(t*(air?16:(dive?9:swim?13:9)))*(air?0.55:(over?0.1:(dive?0.24:swim?0.55:0.38)));
-  seal.tail.rotation.x = -0.22+(air?-0.35:0)+Math.sin(t*(dive?16:swim?10:4.5))*(dive?0.48:swim?0.22:0.08);
+  seal.tail.rotation.y = Math.sin(t*(air?16:(uw?9.5:9)))*(air?0.55:(over?0.1:(uw?0.22:0.38)));
+  seal.tail.rotation.x = -0.20+(air?-0.35:0)+Math.sin(t*(deep?15.5:uw?11.5:4.5))*(deep?0.44:uw?0.32:0.08);
   for(const f of seal.tails){
     f.piv.rotation.y = 0.3+f.s*0.2+Math.sin(t*11+f.s)*0.22;
     f.piv.rotation.x = -0.15+Math.sin(t*13+f.s*2)*0.25-(air?clamp(S.vy*0.03,-0.5,0.5):0);
@@ -1218,7 +1223,7 @@ function animateSeal(dt,t){
   // 贴地的软影子、狂热光晕
   const gy=surfaceY(S.x,S.z), k=1/(1+Math.max(0,S.y-gy)*0.3);
   blob.position.set(S.x, gy+0.05, S.z+0.2); blob.rotation.x=slopeAt(S.x,S.z);
-  blob.scale.set(1.4*k,1,1.95*k); blob.material.opacity=(S.inWater?0.14:0.36)*k;
+  blob.scale.set(1.4*k,1,1.95*k); blob.material.opacity=(S.inWater?0.18:0.36)*k;
   aura.material.opacity = damp(aura.material.opacity, S.fever>0 ? 0.75 : 0, 6, dt);
   aura.visible = aura.material.opacity>0.01; aura.position.set(S.x,gy+0.07,S.z);
   aura.rotation.x = blob.rotation.x; aura.scale.setScalar(3.6+Math.sin(t*12)*0.3);
@@ -1539,11 +1544,11 @@ const Snd = {
     if(!zen && s%2===1) this.hiss(t,7000,5000,0.04,0.012,1.2,this.mus);
     if(fever && s%2===0) this.tone(523.25*Math.pow(2,CH[2]/12),t,0.004,0.1,0.022,'square',this.mus);
   },
-  frame(dt,v,playing,fever,zen,diving){
+  frame(dt,v,playing,fever,zen,uwState){
     if(!this.ready) return;
-    this.windGain.gain.value = damp(this.windGain.gain.value, diving?0.006:(0.014+v*0.002), 3, dt);
-    this.windLP.frequency.value = damp(this.windLP.frequency.value, diving?180:(280+v*20), 3, dt);
-    this.musLP.frequency.value = damp(this.musLP.frequency.value, diving?680:18000, 6, dt);
+    this.windGain.gain.value = damp(this.windGain.gain.value, uwState===2?0.004:uwState===1?0.008:(0.014+v*0.002), 3, dt);
+    this.windLP.frequency.value = damp(this.windLP.frequency.value, uwState===2?160:uwState===1?260:(280+v*20), 3, dt);
+    this.musLP.frequency.value = damp(this.musLP.frequency.value, uwState===2?720:uwState===1?2800:18000, 6, dt);
     this.padGain.gain.value = damp(this.padGain.gain.value, this.padTarget, 0.8, dt);
     if(!this.ok()) return;
     const now=this.ac.currentTime;
@@ -1563,7 +1568,7 @@ const Snd = {
 /* ============================================================
    9. 状态与装扮
    ============================================================ */
-const FEVER_T = 8, WOB_MAX = 1.7, SLAM_R = 6.2, DIVE_DUR = 2.0;
+const FEVER_T = 8, WOB_MAX = 1.7, SLAM_R = 6.2, DEEP_DUR = 1.35;
 const SKINS = [
   { id:'orange', name:'暖橙', main:'#FF7A45', dark:'#DC592A', trim:'#FFF3DF' },
   { id:'mint',   name:'海盐', main:'#3EB8A0', dark:'#278B78', trim:'#EEFBF8' },
@@ -1573,14 +1578,14 @@ const SKINS = [
 const S = {
   state:'attract', mode:'rush', skin:0, seed:1,
   z:0, prevZ:0, dist:0, x:0, prevX:0, vx:0, y:0, vy:0, steer:0,
-  air:false, airT:0, airDur:1, flip:false, slam:false, rebound:false,
-  inWater:false, diving:false, diveT:0, lastRamp:null, waterHinted:false,
+  air:false, airT:0, airDur:1, flip:false, slam:false, superSlam:false, rebound:false, breached:false,
+  inWater:false, deepT:0, lastRamp:null, waterHinted:false,
   speed:20, speedMod:1, boost:0,
   score:0, fish:0, combo:1, comboT:0, bestCombo:1, smashed:0,
   hearts:3, inv:0, hurtT:0, hitstop:0, shake:0, flash:0,
   gauge:0, fever:0,
   biome:0, nextBiomeAt:700, nextMile:500, attractT:0,
-  ball:false, ballWob:0, nextBallAt:420,
+  ball:false, ballWob:0, nextBallAt:340,
   best:0, t:0, overAt:-9, camBlend:0,
   keyL:false, keyR:false
 };
@@ -1596,7 +1601,7 @@ function paintBest(){ S.best=BEST[S.mode]; ui.best.textContent=fmt(S.best); ui.b
    ============================================================ */
 const chunks = new Map(), groundPool = [], waterPool = [];
 const AHEAD = 7, BEHIND = 5;          // 身后也留够长：标题页的镜头是回头看的
-let chunksDirty = true, fishList = [], pengList = [], floeList = [], wringList = [], sballList = [];
+let chunksDirty = true, fishList = [], pengList = [], floeList = [], wringList = [];
 
 function blockedZone(c,x,z){            // 跳台的起落通道、加速带附近不放障碍
   for(const r of c.ramps) if(Math.abs(x-r.x)<4.4 && z<r.z+10 && z>r.z-r.len-56) return true;
@@ -1626,7 +1631,7 @@ function makeChunk(k){
   }
 
   const c = {k,role,zTop,zBot,ground,waterMesh, bergs:[],mounds:[],spires:[],pines:[],snowmen:[],pengs:[],
-    rocks:[],pillars:[],ramps:[],pads:[],fish:[],floes:[],reefs:[],wrings:[],snowballs:[]};
+    rocks:[],pillars:[],ramps:[],pads:[],fish:[],floes:[],reefs:[],hangs:[],wrings:[]};
 
   // ---- 布景（都在赛道外）：冰山、雪包、冰晶、雪松、雪人、围观的企鹅 ----
   const bankPad = role==='snow' ? 0 : 2.5;
@@ -1696,11 +1701,6 @@ function makeChunk(k){
           }
         }
       }
-      // 700 米后偶尔出现沿坡滚落的大雪球
-      if(k<=-10 && rnd()<0.35+diff*0.3){
-        const x=LANES[1+((rnd()*4)|0)], z=gz(0.2+rnd()*0.6);
-        if(!blockedZone(c,x,z)) c.snowballs.push({x,z,r:1.15,vx:(rnd()-0.5)*5.5,vz:7+rnd()*6,rot:0,dead:false,passed:false});
-      }
     }
     // ---- 雪地小鱼 ----
     const solids = c.rocks.concat(c.pillars);
@@ -1720,42 +1720,63 @@ function makeChunk(k){
     }
     if(k<=-1 && rnd()<0.3) addFish(side()*8.9, gz(0.1+rnd()*0.8), rnd()*TAU, true);
   }else{
-    // ---- 冰海水道：气泡加速环、水面浮冰、水下冰礁、水上跃鱼与水下鱼群 ----
+    // ---- 冰海板块（与雪坡等量交替）：冰晶水流环、悬崖冰柱(S深潜)、深海冰礁(空格跃过)、水面浮冰 ----
     const uA = role==='entry' ? 0.36 : 0.08;
     const uB = role==='exit'  ? 0.56 : 0.92;
     const uD = role==='entry' ? 0.48 : 0.08;
     const uD2= role==='exit'  ? 0.48 : 0.92;
+    const hasDeep = uD2 - uD > 0.12;
 
-    // 气泡加速环（水面半露或水下穿行）
     for(let i=0,n=role==='mid'?2:1; i<n; i++){
-      const x=LANES[1+((rnd()*4)|0)], u=lerp(uA,uB,(i+0.4+rnd()*0.3)/n), z=gz(u);
-      const deep = rnd()<0.5;
-      c.wrings.push({x,z,yOff:deep?-1.7:0.45,deep,used:false,ph:rnd()*TAU});
+      const x=LANES[1+((rnd()*4)|0)], u=lerp(uA,uB,(i+0.38+rnd()*0.32)/n), z=gz(u);
+      const tierR = rnd();
+      const tier = !hasDeep ? 'air' : (tierR<0.38 ? 'mid' : (tierR<0.70 ? 'deep' : 'air'));
+      const yOff = tier==='deep' ? -3.30 : tier==='mid' ? -1.85 : 1.55;
+      c.wrings.push({x,z,yOff,tier,used:false,ph:rnd()*TAU});
     }
-    // 冲刺模式水域障碍：浮冰（可跳可潜）+ 水下冰礁（浮面安全，潜泳需躲）
     if(!zen){
       const fn = role==='mid' ? 3 : 2;
       for(let i=0;i<fn;i++){
-        const z=gz(lerp(uA,uB,(i+0.3+rnd()*0.4)/fn)), x=LANES[(rnd()*LANES.length)|0];
-        if(c.wrings.some(w=>Math.abs(w.z-z)<8 && Math.abs(w.x-x)<3.5)) continue;
+        const z=gz(lerp(uA,uB,(i+0.28+rnd()*0.42)/fn)), x=LANES[(rnd()*LANES.length)|0];
+        if(c.wrings.some(w=>w.tier==='air' && Math.abs(w.z-z)<8 && Math.abs(w.x-x)<3.5)) continue;
         c.floes.push({x,z,r:1.55,s:0.95+rnd()*0.3,ry:rnd()*TAU,ph:rnd()*TAU,dead:false,passed:false});
       }
-      const rn = role==='mid' ? 3 : 1;
-      for(let i=0;i<rn;i++){
-        const z=gz(lerp(uD,uD2,(i+0.25+rnd()*0.5)/rn)), x=LANES[(rnd()*LANES.length)|0];
-        if(c.wrings.some(w=>w.deep && Math.abs(w.z-z)<9 && Math.abs(w.x-x)<3.5)) continue;
-        c.reefs.push({x,z,r:0.95,s:0.9+rnd()*0.4,ry:rnd()*TAU,dead:false,passed:false});
+      if(hasDeep){
+        const hn = role==='mid' ? 2 : 1;
+        for(let i=0;i<hn;i++){
+          const z=gz(lerp(uD,uD2,(i+0.24+rnd()*0.48)/hn)), x=LANES[(rnd()*LANES.length)|0];
+          if(c.wrings.some(w=>Math.abs(w.z-z)<9 && Math.abs(w.x-x)<3.8)) continue;
+          c.hangs.push({x,z,r:1.45,s:0.92+rnd()*0.22,ry:(rnd()-0.5)*0.55,dead:false,passed:false});
+        }
+        const rn = role==='mid' ? 2 : 1;
+        for(let i=0;i<rn;i++){
+          const z=gz(lerp(uD,uD2,(i+0.32+rnd()*0.44)/rn)), x=LANES[(rnd()*LANES.length)|0];
+          if(c.wrings.some(w=>w.tier!=='air' && Math.abs(w.z-z)<9 && Math.abs(w.x-x)<3.8)) continue;
+          if(c.hangs.some(h=>Math.abs(h.z-z)<10 && Math.abs(h.x-x)<3.5)) continue;
+          const baseY = surfaceY(x,z), waterY = GRADE*z + WATER_OFF, depth = waterY - baseY;
+          if(depth < 2.8) continue;
+          const maxSy = Math.max(0.8, (depth - 0.55)/1.8);
+          const sy = Math.min(maxSy, 1.85+rnd()*0.45), sc = 0.95+rnd()*0.32;
+          c.reefs.push({x,z,baseY,sy,s:sc,r:1.0*sc,topY:baseY-0.1+1.8*sy,ry:rnd()*TAU,dead:false,passed:false});
+        }
       }
     }
-    // 水面跃鱼 + 水下金鱼通道
-    const laneSurf = LANES[1+((rnd()*4)|0)], laneSub = LANES[(rnd()*LANES.length)|0];
+    const laneMid = LANES[(rnd()*LANES.length)|0];
     for(let i=0;i<7;i++){
-      const z=gz(lerp(uA,uB,i/7));
-      c.fish.push({x:laneSurf, z, ph:i*0.6, lift:0.6+Math.sin(i/6*Math.PI)*1.5, gold:false, dead:false, sub:false});
+      const z=gz(lerp(uA,uB,(i+0.3)/7.3));
+      c.fish.push({x:clamp(laneMid+Math.sin(i*0.65)*2.0,-TRACK_HALF+1.6,TRACK_HALF-1.6), z, ph:i*0.5, lift:-1.85, gold:false, dead:false, sub:true});
     }
+    const laneAir = (c.reefs.length && rnd()<0.65) ? c.reefs[0].x : LANES[1+((rnd()*4)|0)];
     for(let i=0;i<6;i++){
-      const z=gz(lerp(uD,uD2,(i+0.3)/6));
-      c.fish.push({x:laneSub+Math.sin(i*0.7)*1.8, z, ph:i*0.5, lift:-1.65, gold:(i===5), dead:false, sub:true});
+      const z=gz(lerp(uA,uB,(i+0.5)/6.5));
+      c.fish.push({x:laneAir, z, ph:i*0.6, lift:0.65+Math.sin(i/5*Math.PI)*1.7, gold:false, dead:false, sub:true});
+    }
+    if(hasDeep && rnd()<0.75){
+      const laneDeep = (c.hangs.length && rnd()<0.65) ? c.hangs[0].x : LANES[(rnd()*LANES.length)|0];
+      for(let i=0;i<5;i++){
+        const z=gz(lerp(uD,uD2,(i+0.4)/5.4));
+        c.fish.push({x:laneDeep, z, ph:i*0.5, lift:-3.35, gold:(i===4), dead:false, sub:true});
+      }
     }
   }
 
@@ -1779,8 +1800,8 @@ function put(im,n,x,y,z,rx,ry,sx,sy,sz){
   _m.compose(_p,_q,_s); im.setMatrixAt(n,_m); return n+1;
 }
 function syncStatic(){
-  let nr=0, nb=0, nm=0, nc=0, npi=0, ns=0, nrm=0, npd=0, nrf=0;
-  fishList = []; pengList = []; floeList = []; wringList = []; sballList = [];
+  let nr=0, nb=0, nm=0, nc=0, npi=0, ns=0, nrm=0, npd=0, nrf=0, nhg=0;
+  fishList = []; pengList = []; floeList = []; wringList = [];
   for(const c of chunks.values()){
     for(const o of c.rocks)   if(!o.dead) nr = put(imRock,nr, o.x,o.y,o.z, 0,o.ry, o.sx,o.sy,o.sz);
     for(const o of c.bergs)   nb = put(imBerg,nb,   o.x,o.y,o.z, o.rx,o.ry, o.sx,o.sy,o.sz);
@@ -1789,7 +1810,8 @@ function syncStatic(){
     for(const o of c.spires)  nc = put(imCrystal,nc, o.x,surfaceY(o.x,o.z)-0.5,o.z, 0,o.ry, o.s*1.6,o.h,o.s*1.6);
     for(const o of c.pines)   npi = put(imPine,npi, o.x,o.y,o.z, 0,o.ry, o.s,o.h,o.s);
     for(const o of c.snowmen) ns = put(imSnowman,ns, o.x,o.y,o.z, 0,o.ry, o.s,o.s,o.s);
-    for(const o of c.reefs)   if(!o.dead) nrf = put(imReef,nrf, o.x,surfaceY(o.x,o.z)-0.1,o.z, 0,o.ry, o.s,o.s*1.2,o.s);
+    for(const o of c.reefs)   if(!o.dead) nrf = put(imReef,nrf, o.x,o.baseY-0.1,o.z, 0,o.ry, o.s,o.sy,o.s);
+    for(const o of c.hangs)   if(!o.dead) nhg = put(imHang,nhg, o.x,GRADE*o.z+WATER_OFF,o.z, 0,o.ry, o.s,o.s,o.s);
     for(const r of c.ramps){
       const yB=surfaceY(r.x,r.z), yL=surfaceY(r.x,r.z-r.len);
       nrm = put(imRamp,nrm, r.x,yB-0.04,r.z, Math.atan2(yL-yB,r.len),0, r.w/2.2,r.h,1);
@@ -1802,17 +1824,15 @@ function syncStatic(){
     for(const o of c.pengs) pengList.push(o);
     for(const o of c.floes) if(!o.dead) floeList.push(o);
     for(const o of c.wrings) if(!o.used) wringList.push(o);
-    for(const o of c.snowballs) if(!o.dead) sballList.push(o);
   }
-  const all=[[imRock,nr],[imBerg,nb],[imMound,nm],[imCrystal,nc],[imPine,npi],[imSnowman,ns],[imRamp,nrm],[imPad,npd],[imReef,nrf]];
+  const all=[[imRock,nr],[imBerg,nb],[imMound,nm],[imCrystal,nc],[imPine,npi],[imSnowman,ns],[imRamp,nrm],[imPad,npd],[imReef,nrf],[imHang,nhg]];
   for(const [im,n] of all){ im.count=n; im.instanceMatrix.needsUpdate=true; }
 }
-function syncLive(dt,t){                    // 每帧都在动的实例：小鱼、企鹅、浮冰、气泡环、雪球
+function syncLive(dt,t){                    // 每帧都在动的实例：小鱼、企鹅、浮冰、水流环
   let n=0, ng=0;
   for(const f of fishList){
     if(f.dead) continue;
-    const w = f.sub ? null : waterAt(f.x,f.z);
-    const baseY = f.sub ? (GRADE*f.z+WATER_OFF) : ((w.inPool?w.waterY:surfaceY(f.x,f.z))+1.0);
+    const baseY = f.sub ? (GRADE*f.z+WATER_OFF) : (surfaceY(f.x,f.z)+1.0);
     const y = baseY+f.lift+Math.sin(t*2.2+f.ph)*0.22, sc=f.gold?1.5:1;
     f.wy = y;
     _e.set(0, t*(f.gold?2.8:1.5)+f.ph, Math.sin(t*1.8+f.ph)*0.22); _q.setFromEuler(_e); _s.set(sc,sc,sc);
@@ -1853,27 +1873,6 @@ function syncLive(dt,t){                    // 每帧都在动的实例：小鱼
     imWRing.setMatrixAt(nwr++,_m);
   }
   imWRing.count=nwr; imWRing.instanceMatrix.needsUpdate=true;
-
-  let nsb=0;
-  for(const o of sballList){
-    if(o.dead || nsb>=SBALL_CAP) continue;
-    if(S.state==='play' && o.z < S.z+12 && o.z > S.z-160){
-      const nextZ = o.z + o.vz*dt*0.35; // 迎面滚来略微减速给玩家躲避反应，或顺坡滚下：顺坡向下滚 (-vz)
-      void nextZ;
-      o.z -= o.vz*dt;
-      o.x += o.vx*dt;
-      if(Math.abs(o.x) > TRACK_HALF-1.4){ o.x = clamp(o.x,-TRACK_HALF+1.4,TRACK_HALF-1.4); o.vx = -o.vx; }
-      const wr = waterRole(chunkK(o.z));
-      if(wr!=='snow'){ o.dead=true; chunksDirty=true; continue; }
-      o.rot -= o.vz*dt;
-    }
-    const gy = surfaceY(o.x,o.z) + o.r*0.92;
-    o.wy = gy;
-    _e.set(o.rot, 0, -o.x*0.2); _q.setFromEuler(_e); _s.set(o.r,o.r,o.r);
-    _p.set(o.x,gy,o.z); _m.compose(_p,_q,_s);
-    imSnowball.setMatrixAt(nsb++,_m);
-  }
-  imSnowball.count=nsb; imSnowball.instanceMatrix.needsUpdate=true;
 }
 
 /* ============================================================
@@ -1966,11 +1965,11 @@ function resetRun(){
   for(const c of Array.from(chunks.values())) dropChunk(c);
   S.seed = (Math.random()*0x7fffffff)|0;
   Object.assign(S,{ z:0, prevZ:0, dist:0, x:0, prevX:0, vx:0, vy:0, steer:0,
-    air:false, airT:0, airDur:1, flip:false, slam:false, superSlam:false, rebound:false,
-    inWater:false, diving:false, diveT:0, lastRamp:null, waterHinted:false,
+    air:false, airT:0, airDur:1, flip:false, slam:false, superSlam:false, rebound:false, breached:false,
+    inWater:false, deepT:0, lastRamp:null, waterHinted:false,
     speed:20, speedMod:1, boost:0, score:0, fish:0, combo:1, comboT:0, bestCombo:1, smashed:0,
     hearts:3, inv:0, hurtT:0, hitstop:0, shake:0, flash:0, gauge:0, fever:0,
-    biome:0, nextBiomeAt:700, nextMile:500, attractT:0, ball:false, ballWob:0, nextBallAt:420 });
+    biome:0, nextBiomeAt:700, nextMile:500, attractT:0, ball:false, ballWob:0, nextBallAt:340 });
   ballHolder=null; hideBall();
   ensureChunks(); syncStatic(); chunksDirty=false;
   S.y = surfaceY(0,0);
@@ -2004,7 +2003,7 @@ function startRun(){
 }
 function gameOver(quit){
   if(S.state==='over') return;
-  S.state='over'; S.overAt=S.t; S.fever=0; S.diving=false;
+  S.state='over'; S.overAt=S.t; S.fever=0; S.deepT=0;
   seal.flip.rotation.x = wrapPi(seal.flip.rotation.x);
   ui.hud.classList.add('off'); ui.uwtint.style.opacity=0; ui.divehud.classList.remove('on');
   Snd.resume(); Snd.over(); Snd.padTarget = 0.05;
@@ -2046,14 +2045,15 @@ function curV(){
 }
 function tryDive(){
   if(S.state!=='play') return;
-  if(S.air && !S.slam && !S.rebound && S.airT>0.08){
+  const w = S.inWater ? waterAt(S.x,S.z) : null;
+  if(S.air && !S.slam && !S.rebound && S.airT>0.08 && (!S.inWater || (w && S.y > w.waterY - 0.25))){
     S.superSlam = S.flip && (S.airT/Math.max(0.2,S.airDur) > 0.45);
     S.slam=true; S.flip=false; S.vy = Math.min(S.vy,-4)-18;
     seal.flip.rotation.x = wrapPi(seal.flip.rotation.x);
     kick(3); Snd.dive();
-  }else if(S.inWater && !S.air && !S.diving){
-    S.diving=true; S.diveT=DIVE_DUR; kick(-4); Snd.dive();
-    emitBubbles(S.x, S.y, S.z, 12);
+  }else if(S.inWater && !S.air && S.deepT < DEEP_DUR*0.55){
+    S.deepT=DEEP_DUR; kick(-4.5); Snd.dive();
+    emitBubbles(S.x, S.y, S.z, 14);
   }
 }
 function tryJump(){
@@ -2061,23 +2061,14 @@ function tryJump(){
   const vEff = curV();
   if(!S.air){
     if(S.inWater){
-      const w = waterAt(S.x, S.z);
-      if(S.diving){                                             // 潜泳中起跳：破水空翻
-        S.diving=false; S.diveT=0; S.air=true; S.airT=0; S.flip=true; S.slam=false; S.superSlam=false; S.rebound=false;
-        const vyRel = 14.8;
-        S.vy = vyRel - vEff*GRADE; S.airDur = 2*vyRel/GRAV;
-        kick(6); J.happyT=0.8; J.mouthT=0.3; Snd.splash(true); Snd.jump();
-        emitWaterSplash(S.x, w.waterY, S.z, 28, 1.45); ring(S.x, w.waterY, S.z, 4.2, 0xA9DDF2, 0.45, 0.65);
-        popup('破水空翻', 'water');
-      }else{                                                    // 水面跃起：海豚跳
-        S.air=true; S.airT=0; S.flip=false; S.slam=false; S.superSlam=false; S.rebound=false;
-        const vyRel = 12.6;
-        S.vy = vyRel - vEff*GRADE; S.airDur = 2*vyRel/GRAV;
-        kick(5); J.mouthT=0.3; Snd.jump(); Snd.splash(false);
-        emitWaterSplash(S.x, w.waterY, S.z, 16, 1.0); ring(S.x, w.waterY, S.z, 2.8, 0xDDF6FF, 0.38, 0.45, true);
-      }
+      const fromDeep = S.deepT > 0;
+      S.deepT=0; S.air=true; S.airT=0; S.flip=fromDeep; S.slam=false; S.superSlam=false; S.rebound=false; S.breached=false;
+      const vyRel = fromDeep ? 20.8 : 17.7;
+      S.vy = vyRel - vEff*GRADE; S.airDur = 2*vyRel/GRAV;
+      kick(fromDeep?6:5); if(fromDeep) J.happyT=0.9; J.mouthT=0.3; Snd.jump();
+      emitBubbles(S.x, S.y, S.z, fromDeep?16:10);
     }else{                                                      // 雪地起跳（按坡度补偿）
-      S.air=true; S.airT=0; S.flip=false; S.slam=false; S.superSlam=false; S.rebound=false;
+      S.air=true; S.airT=0; S.flip=false; S.slam=false; S.superSlam=false; S.rebound=false; S.breached=true;
       const vyRel = 13.8;
       S.vy = vyRel - vEff*GRADE; S.airDur = 2*vyRel/GRAV;
       kick(5); J.mouthT=0.3; Snd.jump();
@@ -2111,7 +2102,7 @@ window.addEventListener('keyup', e=>{
 window.addEventListener('blur', ()=>{ S.keyL=S.keyR=false; drag.active=false; });
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden && S.state==='play') togglePause(); });
 
-// 按住拖动 = 模拟摇杆；轻点 = 跳；水里下滑 = 下潜
+// 按住拖动 = 模拟摇杆；轻点 = 跳 / 破水跃出；下滑 = 砸地 / 深潜
 const drag = {active:false, id:null, sx:0, sy:0, t0:0, steer:0, moved:false, swipedDown:false};
 canvas.addEventListener('pointerdown', e=>{
   if(S.state!=='play') return;
@@ -2125,7 +2116,7 @@ canvas.addEventListener('pointermove', e=>{
   const dx=e.clientX-drag.sx, dy=e.clientY-drag.sy;
   if(Math.abs(dx)>14 || Math.abs(dy)>14) drag.moved=true;
   drag.steer = clamp(dx/Math.max(60,window.innerWidth*0.15), -1, 1);
-  if(!drag.swipedDown && dy>38 && Math.abs(dy)>Math.abs(dx)*1.15 && ((S.inWater && !S.air && !S.diving) || (S.air && !S.slam))){
+  if(!drag.swipedDown && dy>38 && Math.abs(dy)>Math.abs(dx)*1.15 && ((S.inWater && !S.air && S.deepT<DEEP_DUR*0.55) || (S.air && !S.slam))){
     drag.swipedDown = true; tryDive();
   }
 });
@@ -2242,7 +2233,7 @@ function eat(f){
 function smash(o){
   o.dead=true; o.passed=true; chunksDirty=true; S.smashed++;
   const w=waterAt(o.x,o.z);
-  const y=(w.inPool ? w.waterY : surfaceY(o.x,o.z))+1.0;
+  const y=(w.inPool ? Math.max(S.y+0.4, w.waterY-1.6) : surfaceY(o.x,o.z)+1.0);
   emitBurst(o.x,y,o.z,26,o.tall?0xBFF0FF:(w.inPool?0xA9DDF2:0xFFFFFF));
   if(w.inPool) emitWaterSplash(o.x,w.waterY,o.z,16,1.2); else emitSpray(o.x,y-0.7,o.z,14,1.8);
   ring(o.x,y-0.9,o.z,3.4,o.tall?0xBFF0FF:0xDDF6FF,0.35,0.65);
@@ -2253,7 +2244,7 @@ function slamBlast(rad=SLAM_R, superSlam=false, waterBomb=false){
   const k=chunkK(S.z), r2=rad*rad;
   if(S.mode!=='zen') for(const c of [chunks.get(k-1),chunks.get(k),chunks.get(k+1)]){
     if(!c) continue;
-    const lists = waterBomb ? [c.floes,c.reefs,c.rocks,c.pillars] : [c.rocks,c.pillars,c.snowballs,c.floes];
+    const lists = waterBomb ? [c.floes,c.hangs,c.reefs,c.rocks,c.pillars] : [c.rocks,c.pillars,c.floes,c.hangs];
     for(const list of lists) for(const o of list){
       if(o.dead) continue;
       const dx=o.x-S.x, dz=o.z-S.z;
@@ -2313,7 +2304,7 @@ function updateSeal(dt,t){
   }else{
     let bx=null, bd=1e9;
     for(const f of fishList){
-      if(f.dead||f.lift>1||f.sub) continue;
+      if(f.dead||f.lift>1||(f.sub&&!S.inWater)||(f.sub&&f.lift<-2.5)) continue;
       const dz=S.z-f.z;
       if(dz>2 && dz<60){ const d=Math.abs(f.x-S.x)+dz*0.05; if(d<bd){ bd=d; bx=f.x; } }
     }
@@ -2322,7 +2313,8 @@ function updateSeal(dt,t){
       if(c.zBot>S.z+6 || c.zTop<S.z-46) continue;
       for(const o of c.pillars) steer+=avoid(o);
       for(const o of c.rocks) steer+=avoid(o);
-      for(const o of c.floes) steer+=avoid(o);
+      for(const o of c.hangs) steer+=avoid(o);
+      for(const o of c.reefs) steer+=avoid(o);
     }
   }
   steer = clamp(steer,-1,1);
@@ -2336,7 +2328,7 @@ function updateSeal(dt,t){
     S.x = clamp(S.x,-lim,lim);
     if(hard && play){
       S.speedMod = Math.min(S.speedMod,0.72); S.shake = Math.max(S.shake,0.16); kick(-3);
-      if(S.inWater) emitWaterSplash(S.x, GRADE*S.z+WATER_OFF, S.z, 12, 0.9);
+      if(S.inWater) emitBubbles(S.x, S.y, S.z, 10);
       else emitSpray(S.x, surfaceY(S.x,S.z)+0.2, S.z, 14, 1.3);
       if(S.ball) dropBall('蹭到边缘，金球掉了');
     }
@@ -2352,21 +2344,22 @@ function updateSeal(dt,t){
   S.z -= v*dt;
   if(play) S.dist = -S.z;
 
-  // 地形 / 跳台 / 冰海入水与潜泳
+  // 地形 / 跳台 / 冰海默认下潜与破水跃出
   const base = surfaceY(S.x,S.z);
   const w = waterAt(S.x,S.z);
   const wasWater = S.inWater;
-  let lift = 0, ramp = null;
+  let lift = 0, ramp = null, plunge = false;
 
   if(w.inPool){
-    if(!wasWater && (!S.air || S.y <= w.waterY)){
-      S.inWater = true;
+    if(!wasWater && (!S.air || (S.y <= w.waterY && (S.vy + v*GRADE) <= 0))){
+      S.inWater = true; S.breached = false; plunge = true;
       if(S.slam){
         const isSup = S.superSlam;
         S.slam=false; S.superSlam=false; S.air=false; S.flip=false; S.rebound=false; S.vy=0; S.airT=0;
-        S.diving=true; S.diveT=DIVE_DUR;
+        S.deepT=DEEP_DUR;
         kick(-10); S.shake=Math.max(S.shake,0.55); Snd.splash(true);
         emitWaterSplash(S.x,w.waterY,S.z,46,1.9); ring(S.x,w.waterY,S.z,isSup?7.5:6.2,0xA9DDF2,0.5,0.65);
+        emitBubbles(S.x,S.y-0.3,S.z,18);
         if(play) slamBlast(isSup?8.2:SLAM_R, isSup, true);
       }else{
         if(S.flip){
@@ -2375,65 +2368,80 @@ function updateSeal(dt,t){
         }
         S.air=false; S.flip=false; S.rebound=false; S.superSlam=false; S.vy=0; S.airT=0;
         kick(-5); Snd.splash(false);
-        emitWaterSplash(S.x,w.waterY,S.z,24,1.25); ring(S.x,w.waterY,S.z,3.8,0xDDF6FF,0.42,0.52,true);
+        emitWaterSplash(S.x,w.waterY,S.z,28,1.35); ring(S.x,w.waterY,S.z,3.8,0xDDF6FF,0.42,0.55,true);
+        emitBubbles(S.x,S.y-0.25,S.z,14);
       }
       if(play && !S.waterHinted){
-        S.waterHinted=true; toast('进入冰海 · '+(isTouch?'轻点跳 / 下滑潜泳':'空格跃起 / S 潜泳'));
+        S.waterHinted=true; toast('进入冰海板块 · '+(isTouch?'轻点破水跃出 / 下滑深潜':'空格破水跃出 / S 深潜'));
       }
     }
 
     if(S.air){
       S.airT += dt; S.vy -= GRAV*dt; S.y += S.vy*dt;
-      const surfT = w.waterY - 0.44;
+      if(!S.breached && (S.vy + v*GRADE) > 0 && S.y >= w.waterY - 0.12){
+        S.breached = true;
+        Snd.splash(S.flip);
+        emitWaterSplash(S.x, w.waterY, S.z, S.flip?30:22, S.flip?1.45:1.15);
+        ring(S.x, w.waterY, S.z, S.flip?4.2:3.0, 0xDDF6FF, 0.42, 0.55, !S.flip);
+        if(play) popup(S.flip?'破水空翻':'破水跃出', 'water');
+      }
+      const surfT = Math.max(base + 0.40, w.waterY - 0.22);
       if(S.y <= surfT && (S.vy + v*GRADE) <= 0){
-        S.inWater=true; S.y=surfT;
+        S.inWater=true; S.y=surfT; S.breached=false; plunge=true;
         if(S.slam){
           const isSup = S.superSlam;
-          S.slam=false; S.superSlam=false; S.diving=true; S.diveT=DIVE_DUR;
+          S.slam=false; S.superSlam=false; S.deepT=DEEP_DUR;
           kick(-10); S.shake=Math.max(S.shake,0.5); Snd.splash(true);
           emitWaterSplash(S.x,w.waterY,S.z,42,1.8); ring(S.x,w.waterY,S.z,6.0,0xA9DDF2,0.5,0.65);
+          emitBubbles(S.x,S.y-0.25,S.z,18);
           if(play) slamBlast(SLAM_R, isSup, true);
         }else{
           if(S.flip){
             seal.flip.rotation.x -= TAU;
-            if(play){ const b=Math.round(65*S.combo); S.score+=b; addFever(0.1); Snd.flip(); popup('海豚空翻 +'+b,'water'); J.happyT=0.8; }
-          }else{ Snd.splash(false); emitWaterSplash(S.x,w.waterY,S.z,20,1.1); ring(S.x,w.waterY,S.z,3.0,0xDDF6FF,0.38,0.48,true); }
+            if(play){ const b=Math.round(65*S.combo); S.score+=b; addFever(0.1); Snd.flip(); popup('空翻入水 +'+b,'water'); J.happyT=0.8; }
+          }
+          Snd.splash(false); emitWaterSplash(S.x,w.waterY,S.z,22,1.15); ring(S.x,w.waterY,S.z,3.0,0xDDF6FF,0.38,0.48,true);
+          emitBubbles(S.x,S.y-0.2,S.z,12);
           kick(-4);
         }
         S.air=false; S.flip=false; S.rebound=false; S.superSlam=false; S.vy=0; S.airT=0;
       }
     }else{
-      if(S.diving){
-        S.diveT -= dt;
-        const p = clamp(1 - S.diveT/DIVE_DUR, 0, 1);
-        const diveArc = Math.sin(Math.pow(p, 0.72)*Math.PI);
-        const diveY = Math.max(base+0.45, w.waterY - 0.48 - clamp(w.depth-0.85, 0.9, 1.52)*diveArc + Math.sin(t*11)*0.11);
-        S.y = damp(S.y, diveY, 12, dt);
-        bubAcc += 15*dt*(REDUCED?0.5:1);
-        while(bubAcc>1){ bubAcc-=1; emitBubbles(S.x, S.y+0.25, S.z+0.5, 1); }
-        if(S.diveT <= 0){
-          S.diving=false; emitWaterSplash(S.x,w.waterY,S.z,14,0.95); ring(S.x,w.waterY,S.z,3.0,0xDDF6FF,0.45,0.42,true); Snd.bubble();
-        }
+      const cruisY = Math.max(base+0.55, w.waterY - 1.85 + Math.sin(t*7.2)*0.11);
+      if(S.deepT > 0){
+        S.deepT = Math.max(0, S.deepT - dt);
+        const p = 1 - S.deepT/DEEP_DUR;
+        const deepArc = smooth(clamp(p/0.18,0,1))*(1-smooth(clamp((p-0.72)/0.28,0,1)));
+        const deepY = Math.max(base+0.52, w.waterY - 3.45 + Math.sin(t*10.5)*0.08);
+        const targetY = lerp(cruisY, deepY, deepArc);
+        S.y = damp(S.y, targetY, 12, dt);
+        bubAcc += (16+v*0.2)*dt*(REDUCED?0.5:1);
+        while(bubAcc>1){ bubAcc-=1; emitBubbles(S.x, S.y+0.2, S.z+0.55, 1); }
+        if(S.deepT <= 0) Snd.bubble();
       }else{
-        const swimY = w.waterY - 0.46 + Math.sin(t*7.5)*0.05;
-        S.y = damp(S.y, swimY, 14, dt);
-        sprayAcc += (0.55+v*0.06+Math.abs(S.steer)*v*0.10)*dt*(REDUCED?0.5:1);
-        while(sprayAcc>1){ sprayAcc-=1; emitWaterSplash(S.x-S.steer*0.5, w.waterY, S.z+0.55, 1, 0.45+Math.abs(S.steer)*0.32); }
-        wRippleAcc += (1.1+v*0.045)*dt*(REDUCED?0.5:1);
-        while(wRippleAcc>1){ wRippleAcc-=1; ring(S.x, w.waterY, S.z+0.35, 2.3, 0xDDF6FF, 0.55, 0.28, true); }
+        if(S.y > cruisY + 0.35) plunge = true;
+        S.y = damp(S.y, cruisY, 9.5, dt);
+        bubAcc += (9+v*0.16)*dt*(REDUCED?0.5:1);
+        while(bubAcc>1){ bubAcc-=1; emitBubbles(S.x-S.steer*0.35, S.y+0.15, S.z+0.6, 1); }
+        if(S.y >= w.waterY - 0.85){
+          sprayAcc += (0.55+v*0.05)*dt*(REDUCED?0.5:1);
+          while(sprayAcc>1){ sprayAcc-=1; emitWaterSplash(S.x-S.steer*0.5, w.waterY, S.z+0.55, 1, 0.48); }
+          wRippleAcc += (1.1+v*0.045)*dt*(REDUCED?0.5:1);
+          while(wRippleAcc>1){ wRippleAcc-=1; ring(S.x, w.waterY, S.z+0.35, 2.3, 0xDDF6FF, 0.55, 0.28, true); }
+        }
       }
     }
   }else{
     if(wasWater){
       S.inWater=false;
-      const wasDiv = S.diving; S.diving=false; S.diveT=0;
+      const wasDeep = S.deepT > 0; S.deepT=0; S.breached=true;
       if(!S.air){
-        S.y = Math.max(S.y, base+0.2);
-        const popVy = wasDiv ? 10.5 : 6.4;
+        S.y = Math.max(S.y, base+0.25);
+        const popVy = wasDeep ? 11.4 : 8.4;
         S.air=true; S.airT=0; S.flip=false; S.slam=false; S.superSlam=false; S.rebound=false;
         S.vy = popVy - v*GRADE; S.airDur = 2*popVy/GRAV;
-        kick(4); Snd.splash(false); emitWaterSplash(S.x,S.y,S.z,22,1.2);
-        if(play) popup('破水而出','water');
+        kick(4); Snd.splash(false); emitWaterSplash(S.x,S.y,S.z,24,1.25);
+        if(play) popup('重返雪坡','water');
       }
     }
     const ck = chunkK(S.z);
@@ -2441,7 +2449,7 @@ function updateSeal(dt,t){
       if(Math.abs(S.x-r.x)<r.w && S.z<=r.z && S.z>=r.z-r.len){ lift=r.h*clamp((r.z-S.z)/r.len,0,1); ramp=r; }
       const lip = r.z - r.len*0.85;
       if(r!==S.lastRamp && Math.abs(S.x-r.x)<r.w && S.prevZ>=lip && S.z<lip && S.y<=surfaceY(S.x,S.z)+r.h+1.6){
-        S.lastRamp=r; S.air=true; S.airT=0; S.flip=true; S.slam=false; S.superSlam=false; S.rebound=false;
+        S.lastRamp=r; S.air=true; S.airT=0; S.flip=true; S.slam=false; S.superSlam=false; S.rebound=false; S.breached=true;
         const vyRel = 18.0 + lift*1.1;
         S.vy = vyRel - v*GRADE;
         S.airDur = 2*vyRel/GRAV;
@@ -2479,29 +2487,30 @@ function updateSeal(dt,t){
   }else if(S.air && S.flip){
     seal.flip.rotation.x = Math.max(seal.flip.rotation.x, TAU*clamp(S.airT/S.airDur,0,1));
   }else{
-    const dp = S.diving ? clamp(1 - S.diveT/DIVE_DUR, 0, 1) : 0;
-    const divePitch = dp<0.25 ? lerp(-0.48,-0.10,dp/0.25) : dp>0.72 ? lerp(-0.08,0.34,(dp-0.72)/0.28) : -0.10;
-    const pitch = S.slam ? -0.35 : S.diving ? divePitch : S.air ? clamp((S.vy+v*GRADE)*0.038,-0.7,0.8)
-                : S.inWater ? (0.05+Math.sin(t*7.5)*0.07) : slopeAt(S.x,S.z)+(ramp?Math.atan(ramp.h/ramp.len):0);
+    const dp = S.deepT>0 ? clamp(1 - S.deepT/DEEP_DUR, 0, 1) : 0;
+    const deepPitch = dp<0.22 ? lerp(-0.50,-0.12,dp/0.22) : dp>0.72 ? lerp(-0.10,0.32,(dp-0.72)/0.28) : -0.10;
+    const pitch = S.slam ? -0.35 : S.deepT>0 ? deepPitch : S.air ? clamp((S.vy+v*GRADE)*0.038,-0.7,0.8)
+                : S.inWater ? ((plunge?-0.30:-0.04)+Math.sin(t*7.2)*0.06) : slopeAt(S.x,S.z)+(ramp?Math.atan(ramp.h/ramp.len):0);
     seal.flip.rotation.x = damp(seal.flip.rotation.x, pitch, 9, dt);
   }
 
-  // 雪雾与滑痕 / 水波尾迹
-  const grounded = !S.air && lift<0.05 && !S.diving;
+  // 雪雾与滑痕 / 浅水开尔文尾迹
+  const surfSkim = S.inWater && !S.air && S.y >= w.waterY - 0.85;
+  const snowGrounded = !S.inWater && !S.air && lift<0.05;
   if(!S.air && !S.inWater){
     sprayAcc += (0.5+v*0.10+Math.abs(S.steer)*v*0.14)*dt*(REDUCED?0.5:1);
     while(sprayAcc>1){ sprayAcc-=1; emitSpray(S.x-S.steer*0.7, base+lift+0.1, S.z+0.7, 1, 0.55+v*0.012+Math.abs(S.steer)*0.5); }
   }
-  pushTrail(S.x, S.z+0.5, grounded?1:0, S.inWater && !S.air && !S.diving);
+  pushTrail(S.x, S.z+0.5, (snowGrounded||surfSkim)?1:0, surfSkim);
 }
-function updateOver(dt,t){               // 结束后：滑行着停下，瘫成一团，头顶冒星星
+function updateOver(dt,t){               // 结束后：滑行或浮出水面停下
   S.speed = damp(S.speed,0,2.2,dt);
   S.z -= S.speed*S.speedMod*dt;
   const w = waterAt(S.x,S.z), gy = w.inPool ? w.waterY-0.35 : surfaceY(S.x,S.z);
   if(S.air){
     S.vy -= GRAV*dt; S.y += S.vy*dt;
     if(S.y<=gy){ S.y=gy; S.air=false; S.slam=false; S.flip=false; S.rebound=false; kick(-5); }
-  }else S.y = Math.max(gy, damp(S.y,gy,10,dt));
+  }else S.y = w.inPool ? damp(S.y,gy,5,dt) : Math.max(gy, damp(S.y,gy,10,dt));
   seal.root.position.set(S.x,S.y,S.z);
   seal.tilt.rotation.z = damp(seal.tilt.rotation.z, 0, 4, dt);
   seal.flip.rotation.x = damp(seal.flip.rotation.x, S.air?0:(w.inPool?0:slopeAt(S.x,S.z)), 4, dt);
@@ -2520,7 +2529,7 @@ function updateBall(dt,t){
   if(ballHolder){
     ballHolder.age += dt;
     const w=waterAt(ballHolder.x,ballHolder.z);
-    ballHolder.y = (w.inPool?w.waterY:surfaceY(ballHolder.x,ballHolder.z))+1.0+Math.sin(t*2.6)*0.22;
+    ballHolder.y = (w.inPool?(w.waterY-1.45):surfaceY(ballHolder.x,ballHolder.z)+1.0)+Math.sin(t*2.6)*0.22;
     const dz=ballHolder.z-S.z;
     if(segDist2(S.prevX,S.prevZ,S.x,S.z,ballHolder.x,ballHolder.z)<4.4){
       ballHolder=null; S.ball=true; S.ballWob=0; J.happyT=1.2; kick(3);
@@ -2533,7 +2542,7 @@ function updateBall(dt,t){
     const z=S.z-210, cc=chunks.get(chunkK(z)), mid=[1,2,3,4];
     let x=LANES[1+((Math.random()*4)|0)];
     if(cc){
-      const obs=cc.rocks.concat(cc.pillars,cc.floes,cc.reefs);
+      const obs=cc.rocks.concat(cc.pillars,cc.floes,cc.reefs,cc.hangs);
       for(let tries=0;tries<4;tries++){
         const cx=LANES[mid[(Math.random()*4)|0]];
         if(!obs.some(o=>!o.dead && Math.abs(o.x-cx)<o.r+2.2 && Math.abs(o.z-z)<8)){ x=cx; break; }
@@ -2543,7 +2552,7 @@ function updateBall(dt,t){
     toast('金球来了');
   }
   if(S.ball){
-    S.ballWob += (Math.abs(S.steer)*1.15 + Math.abs(S.vx)*0.028 + (S.boost>0?0.9:0) + (S.air?0.45:0) + (S.diving?0.25:0) + (S.slam?3:0))*dt;
+    S.ballWob += (Math.abs(S.steer)*1.15 + Math.abs(S.vx)*0.028 + (S.boost>0?0.9:0) + (S.air?0.45:0) + (S.deepT>0?0.35:0) + (S.slam?3:0))*dt;
     S.ballWob = Math.max(0, S.ballWob-dt*0.62);
     if(S.ballWob>WOB_MAX) dropBall('晃得太厉害，金球掉了');
     else{
@@ -2566,11 +2575,10 @@ function placeBall(dt,t){
   ballHalo.position.copy(ballMesh.position);
 }
 
-/* ---- 小鱼 / 加速带 / 气泡环 / 障碍 ---- */
+/* ---- 小鱼 / 加速带 / 水流环 / 障碍 ---- */
 function onHit(o){
   o.passed=true;
-  if(o.vz!==undefined){ o.dead=true; chunksDirty=true; }
-  const w=waterAt(o.x,o.z), y=(w.inPool?w.waterY:surfaceY(o.x,o.z))+1.0;
+  const w=waterAt(o.x,o.z), y=w.inPool ? (S.y+0.55) : (surfaceY(o.x,o.z)+1.0);
   S.inv=1.2; S.hurtT=1.0; S.hitstop=0.09; S.hearts--; paintHearts();
   S.speedMod=0.35; S.combo=1; S.comboT=0; S.shake=0.85; S.flash=1; kick(-9);
   Snd.hit(); emitBurst(o.x, y, o.z, 26, w.inPool?0xA9DDF2:0xFFFFFF);
@@ -2578,13 +2586,16 @@ function onHit(o){
   if(S.hearts<=0) gameOver(false);
 }
 function updatePickups(dt){
-  const px=S.x, pz=S.z, ppx=S.prevX, ppz=S.prevZ, mag=S.fever>0, cy=S.y+0.6;
+  const px=S.x, pz=S.z, ppx=S.prevX, ppz=S.prevZ, mag=S.fever>0, cy=S.y+0.45;
   for(const f of fishList){
     if(f.dead) continue;
     const dz=f.z-pz;
     if(dz>4.5 || dz<(mag?-18:-4.5)) continue;
-    if(mag && Math.abs(f.x-px)<8){ f.x=damp(f.x,px,7,dt); f.lift=damp(f.lift,0,6,dt); }
-    const d2 = segDist2(ppx,ppz,px,pz,f.x,f.z), yTol = f.sub?(mag?2.8:1.65):2.4;
+    if(mag && Math.abs(f.x-px)<8.5){
+      const targetLift = f.sub ? (S.y - (GRADE*f.z + WATER_OFF)) : 0;
+      f.x=damp(f.x,px,7,dt); f.lift=damp(f.lift,targetLift,6,dt);
+    }
+    const d2 = segDist2(ppx,ppz,px,pz,f.x,f.z), yTol = mag ? 4.2 : (f.sub ? 1.55 : 2.2);
     if(d2<(mag?4.5:2.25) && Math.abs((f.wy||cy)-cy)<yTol) eat(f);
   }
   if(S.comboT>0){ S.comboT-=dt; if(S.comboT<=0) S.combo=1; }
@@ -2602,11 +2613,11 @@ function updatePickups(dt){
     if(wr.used) continue;
     const dz=wr.z-pz;
     if(dz>4.5 || dz<-5) continue;
-    if(segDist2(ppx,ppz,px,pz,wr.x,wr.z)<5.8 && Math.abs((wr.wy||cy)-cy)<2.2){
+    if(segDist2(ppx,ppz,px,pz,wr.x,wr.z)<5.8 && Math.abs((wr.wy||cy)-cy)<2.15){
       wr.used=true; chunksDirty=true; S.boost=1.65;
       const b=Math.round(80*S.combo); S.score+=b; kick(4); J.happyT=0.6; Snd.bubble(); Snd.pad();
       emitBurst(wr.x, wr.wy||cy, wr.z, 20, 0xA9DDF2); ring(wr.x, wr.wy||cy, wr.z, 4.2, 0xDDF6FF, 0.4, 0.6);
-      popup('气泡加速 +'+b,'water'); addFever(0.1);
+      popup('水流加速 +'+b,'water'); addFever(0.1);
     }
   }
   if(S.mode==='zen') return;
@@ -2637,58 +2648,62 @@ function updatePickups(dt){
     }
     for(const o of cc.reefs){
       if(o.dead) continue;
-      const w=waterAt(o.x,o.z);
-      if(!w.inPool || S.y >= w.waterY-0.85) continue;         // 浮在水面游泳时安全从暗礁上方掠过
       const dz=o.z-pz;
       if(!o.passed && dz>1.4){
         o.passed=true;
-        if(!mag && S.inv<=0 && Math.abs(o.x-px)<o.r+2.0){
-          const b=Math.round(25*S.combo); S.score+=b; popup('贴礁游过 +'+b,'water'); Snd.near(); addFever(0.08);
+        if(!mag && S.inv<=0){
+          if(S.y >= o.topY+0.35 && Math.abs(o.x-px)<o.r+1.8){
+            const b=Math.round(35*S.combo); S.score+=b; popup('跃礁而过 +'+b,'water'); Snd.near(); addFever(0.1);
+          }else if(Math.abs(o.x-px)<o.r+2.1){
+            const b=Math.round(25*S.combo); S.score+=b; popup('贴礁游过 +'+b,'water'); Snd.near(); addFever(0.08);
+          }
         }
         continue;
       }
+      if(S.y >= o.topY+0.35) continue;
       const rr=o.r+0.62;
       if(segDist2(ppx,ppz,px,pz,o.x,o.z)>=rr*rr) continue;
-      if(mag){ smash(o); const b=Math.round(45*S.combo); S.score+=b; popup('撞碎暗礁 +'+b,'water'); S.hitstop=0.04; continue; }
+      if(mag){ smash(o); const b=Math.round(45*S.combo); S.score+=b; popup('撞碎冰礁 +'+b,'water'); S.hitstop=0.04; continue; }
+      if(S.inv>0) continue;
+      onHit(o); return;
+    }
+    for(const o of cc.hangs){
+      if(o.dead) continue;
+      const wy = GRADE*o.z + WATER_OFF, dz = o.z-pz;
+      const underKeel = S.y < wy - 2.48, overCap = S.air && S.y > wy + 0.95;
+      if(!o.passed && dz>1.4){
+        o.passed=true;
+        if(!mag && S.inv<=0 && Math.abs(o.x-px)<o.r+1.8){
+          if(underKeel){ const b=Math.round(30*S.combo); S.score+=b; popup('冰下潜过 +'+b,'water'); Snd.near(); addFever(0.09); }
+          else if(overCap){ const b=Math.round(35*S.combo); S.score+=b; popup('越冰而过 +'+b,'water'); Snd.near(); addFever(0.09); }
+          else{ const b=Math.round(20*S.combo); S.score+=b; popup('擦冰掠过 +'+b,'water'); Snd.near(); addFever(0.07); }
+        }
+        continue;
+      }
+      if(underKeel || overCap) continue;
+      const rr=o.r+0.62;
+      if(segDist2(ppx,ppz,px,pz,o.x,o.z)>=rr*rr) continue;
+      if(mag || S.slam){ smash(o); const b=Math.round(45*S.combo); S.score+=b; popup('碎悬冰 +'+b,'water'); S.hitstop=0.04; continue; }
       if(S.inv>0) continue;
       onHit(o); return;
     }
   }
   for(const fl of floeList){
     if(fl.dead) continue;
-    const w=waterAt(fl.x,fl.z), dz=fl.z-pz;
+    const wy=GRADE*fl.z+WATER_OFF, dz=fl.z-pz;
     if(!fl.passed && dz>1.5){
       fl.passed=true;
-      if(!mag && S.inv<=0 && Math.abs(fl.x-px)<fl.r+1.6){
-        if(S.diving || S.y<w.waterY-0.95){ const b=Math.round(30*S.combo); S.score+=b; popup('水下穿行 +'+b,'water'); Snd.near(); addFever(0.08); }
-        else if(S.air && S.y>w.waterY+0.25){ const b=Math.round(30*S.combo); S.score+=b; popup('跃过浮冰 +'+b,'water'); Snd.near(); addFever(0.08); }
-        else{ const b=Math.round(15*S.combo); S.score+=b; popup('擦边 +'+b,'good'); Snd.near(); addFever(0.06); }
+      if(!mag && S.inv<=0 && S.air && S.y>wy+0.58 && Math.abs(fl.x-px)<fl.r+1.6){
+        const b=Math.round(30*S.combo); S.score+=b; popup('跃过浮冰 +'+b,'water'); Snd.near(); addFever(0.08);
       }
       continue;
     }
+    if(S.y < wy - 0.72 || S.y > wy + 0.58) continue;
     const rr=fl.r+0.62;
     if(segDist2(ppx,ppz,px,pz,fl.x,fl.z)>=rr*rr) continue;
-    if((S.diving || S.y<w.waterY-0.95) || (S.air && S.y>w.waterY+0.25)) continue;
-    if(mag || S.slam){ smash(fl); const b=Math.round(45*S.combo); S.score+=b; popup('碎冰 +'+b,'water'); S.hitstop=0.04; continue; }
+    if(mag || S.slam){ smash(fl); const b=Math.round(45*S.combo); S.score+=b; popup('碎浮冰 +'+b,'water'); S.hitstop=0.04; continue; }
     if(S.inv>0) continue;
     onHit(fl); return;
-  }
-  for(const sb of sballList){
-    if(sb.dead) continue;
-    const dz=sb.z-pz;
-    if(!sb.passed && dz>1.5){
-      sb.passed=true;
-      if(!mag && S.inv<=0 && Math.abs(sb.x-px)<sb.r+2.2){
-        const b=Math.round(25*S.combo); S.score+=b; popup('躲过雪球 +'+b,'good'); Snd.near(); addFever(0.08);
-      }
-      continue;
-    }
-    const rr=sb.r+0.65;
-    if(segDist2(ppx,ppz,px,pz,sb.x,sb.z)>=rr*rr) continue;
-    if(S.air && clear>sb.r*1.45) continue;
-    if(mag){ smash(sb); const b=Math.round(45*S.combo); S.score+=b; popup('震碎雪球 +'+b,'good'); S.hitstop=0.04; continue; }
-    if(S.inv>0) continue;
-    onHit(sb); return;
   }
 }
 function attractEat(){                   // 标题页的海豹也真的在吃鱼
@@ -2712,7 +2727,7 @@ function updateBiome(dt){
     if(S.attractT>11){ S.attractT=0; S.biome=(S.biome+1)%BIOMES.length; }
   }
   const wantWater = S.state==='play' && S.inWater;
-  const biomeLbl = wantWater ? '冰海水道' : BIOMES[S.biome].name;
+  const biomeLbl = wantWater ? '冰海板块' : BIOMES[S.biome].name;
   if(ui.biome.textContent !== biomeLbl) ui.biome.textContent = biomeLbl;
   ui.biome.classList.toggle('water', wantWater);
 
@@ -2727,7 +2742,7 @@ function updateBiome(dt){
 
   waterMat.color.copy(cur.wCol); waterMat.emissive.copy(cur.wEmis);
   scene.fog.color.copy(cur.fog).lerp(UW_FOG, uwMix);
-  scene.fog.near=lerp(cur.fogN, 26, uwMix); scene.fog.far=lerp(cur.fogF, 150, uwMix);
+  scene.fog.near=lerp(cur.fogN, 28, uwMix); scene.fog.far=lerp(cur.fogF, 165, uwMix);
   hemi.color.copy(cur.hemiS); hemi.groundColor.copy(cur.hemiG); hemi.intensity=cur.hemiI;
   sun.color.copy(cur.sun); sun.intensity=cur.sunI;
   sunSprite.material.color.copy(cur.sun); sunSprite.material.opacity=clamp(0.35+cur.sunI*0.2,0,0.95)*(1-uwMix*0.75);
@@ -2745,7 +2760,9 @@ const tLook = new THREE.Vector3();
 let voSet = false;
 function updateCamera(dt){
   const spdN = clamp((S.speed-20)/36,0,1);
-  diveCam = damp(diveCam, (S.state==='play' && S.inWater && S.diving) ? 1 : 0, 7, dt);
+  const sealW = S.inWater ? waterAt(S.x,S.z) : null;
+  const camWantUW = S.state==='play' && S.inWater && (!S.air || (sealW && S.y < sealW.waterY - 0.25 && (S.vy + curV()*GRADE) <= 0));
+  diveCam = damp(diveCam, camWantUW ? 1 : 0, 7.5, dt);
   const back = 8.6+spdN*3.0, up = 4.1+spdN*0.5;
   camX = damp(camX, S.x*0.55, 6, dt);
   camY = damp(camY, S.y, 7, dt);
@@ -2758,8 +2775,10 @@ function updateCamera(dt){
   let cy = camY + h;
   const gy = surfaceY(cx,cz)+0.72;
   const camW = waterAt(cx, cz);
+  if(S.state==='attract' && camW.inPool) cy = Math.max(cy, camW.waterY + 0.65);
   if(diveCam > 0.001 && camW.inPool){
-    const uwY = Math.max(gy, camW.waterY - 1.35);
+    const subOff = S.deepT > 0 ? 2.35 : 1.55;
+    const uwY = Math.max(gy, camW.waterY - subOff);
     cy = lerp(cy, uwY, smooth(diveCam));
   }
   if(cy<gy) cy=gy;
@@ -2889,7 +2908,8 @@ function frame(ms){
     }
     burst.geometry.attributes.position.needsUpdate=true; }
 
-  Snd.frame(dt, S.speed*S.speedMod, play, S.fever>0, S.mode==='zen', S.inWater && S.diving);
+  const uwState = (S.inWater && !S.air) ? (S.deepT>0 ? 2 : 1) : 0;
+  Snd.frame(dt, S.speed*S.speedMod, play, S.fever>0, S.mode==='zen', uwState);
 
   hudAcc += dt;
   if(hudAcc>0.07){
@@ -2899,10 +2919,10 @@ function frame(ms){
     const on = S.combo>1 && S.comboT>0 && play;
     ui.combo.classList.toggle('on',on);
     if(on){ ui.comboB.textContent='×'+S.combo; ui.comboBar.style.transform='scaleX('+clamp(S.comboT/2.8,0,1)+')'; }
-    const diveOn = play && S.inWater && S.diving;
+    const diveOn = play && S.inWater && !S.air && S.deepT>0;
     ui.divehud.classList.toggle('on', diveOn);
-    if(diveOn) ui.diveBar.style.width = clamp(S.diveT/DIVE_DUR*100,0,100).toFixed(1)+'%';
-    ui.uwtint.style.opacity = uwMix > 0.01 ? (uwMix*0.88).toFixed(2) : '0';
+    if(diveOn) ui.diveBar.style.width = clamp(S.deepT/DEEP_DUR*100,0,100).toFixed(1)+'%';
+    ui.uwtint.style.opacity = uwMix > 0.01 ? (uwMix*0.78).toFixed(2) : '0';
     if(play && S.dist >= S.nextMile){ toast('已滑行 '+S.nextMile+' 米！',true); S.nextMile+=500; }
     ui.fev.classList.toggle('on', S.fever>0);
     ui.fevBar.style.width = ((S.fever>0 ? S.fever/FEVER_T : S.gauge)*100).toFixed(1)+'%';
@@ -2929,8 +2949,8 @@ function start(saved){
   paintBest();
   buildSkins(); applySkin(S.skin, false);
   if(isTouch){
-    ui.hint.textContent='拖动转向 · 轻点跳/破水 · 空中或水面下滑 砸地/潜泳';
-    $('ctl-text').innerHTML='按住左右拖动转向，轻点起跳 / 破水，下滑砸地 / 潜泳<br>轻点海豹可互动';
+    ui.hint.textContent='拖动转向 · 轻点起跳 / 破水跃出 · 下滑砸地 / 深潜';
+    $('ctl-text').innerHTML='按住左右拖动转向，轻点起跳或破水跃出，下滑砸地或深潜<br>轻点海豹可互动';
   }
   paintModes(); paintMute(); paintSky(true);
   onResize();
