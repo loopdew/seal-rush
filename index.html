@@ -176,25 +176,23 @@ button{font-family:inherit}
   backdrop-filter:blur(9px);transition:opacity .8s ease;
 }
 #hint.fade{opacity:0}
-#jumpbtn{
-  position:fixed;z-index:9;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(60px + env(safe-area-inset-bottom,0px));
-  width:78px;height:78px;border-radius:50%;border:1px solid rgba(180,202,220,.36);
-  background:rgba(8,19,31,.6);color:var(--ice);font-size:13px;font-weight:600;letter-spacing:.08em;
-  backdrop-filter:blur(10px);display:none;align-items:center;justify-content:center;touch-action:none;
-}
-#jumpbtn.press{transform:scale(.92);background:rgba(255,122,69,.4)}
 .hud-actions{
   position:fixed;z-index:9;right:var(--gut-r);bottom:var(--bot);
-  display:none;align-items:center;gap:8px;
+  display:none;align-items:center;gap:6px;
 }
 .hud-actions.show{display:flex}
 .hud-act{
-  padding:5px 13px;border-radius:999px;border:1px solid var(--line);background:var(--glass);
-  color:var(--ice-dim);font-size:11.5px;letter-spacing:.08em;backdrop-filter:blur(9px);cursor:pointer;
-  transition:border-color .15s ease,color .15s ease;
+  padding:5px 11px;border-radius:999px;border:1px solid var(--line);background:var(--glass);
+  color:var(--ice-dim);font-size:11.5px;letter-spacing:.05em;backdrop-filter:blur(9px);cursor:pointer;
+  transition:border-color .15s ease,color .15s ease;white-space:nowrap;
 }
 .hud-act:hover{border-color:rgba(180,202,220,.55);color:var(--ice)}
-#jumpbtn.show{display:flex}
+@media (max-width:480px){
+  .hud-actions{gap:4px}
+  .hud-act{padding:4px 8px;font-size:11px;letter-spacing:.02em}
+  .hud-bl{padding:5px 9px;font-size:11px;gap:6px}
+  .hud-bl b{font-size:13px}
+}
 
 /* ---------- 飘字 ---------- */
 .pop{
@@ -329,6 +327,30 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
 #boot.failed .err{display:block}
 @media (max-height:540px){.lede,.controls{display:none}.wrap{gap:11px}h1{font-size:44px}}
 @media (max-width:420px){.stat-v b{font-size:26px}}
+@media (max-width:480px){
+  .start-tools{gap:6px}
+  .tool-pill{padding:5px 10px;font-size:11.5px}
+}
+.guide-card{
+  width:100%;padding:16px 18px;border-radius:16px;border:1px solid rgba(95,224,190,.32);
+  background:rgba(10,24,38,.82);text-align:left;display:flex;flex-direction:column;gap:11px;
+}
+.guide-badge{
+  display:inline-flex;align-self:flex-start;padding:3px 10px;border-radius:999px;
+  background:rgba(95,224,190,.15);border:1px solid rgba(95,224,190,.42);
+  color:var(--mint);font-size:11px;font-weight:600;letter-spacing:.08em;
+}
+.guide-card h3{margin:0;font-family:var(--font-display);font-size:22px;letter-spacing:.04em;color:var(--ice)}
+.guide-list{display:flex;flex-direction:column;gap:9px;margin:0;padding:0;list-style:none}
+.guide-list li{display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.55;color:var(--ice-dim)}
+.guide-list b{color:var(--ice);font-weight:600}
+.guide-ico{
+  width:26px;height:26px;border-radius:8px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;
+  background:rgba(255,201,74,.14);border:1px solid rgba(255,201,74,.32);font-size:14px;
+}
+.guide-dots{display:flex;align-items:center;justify-content:center;gap:7px}
+.guide-dots i{width:7px;height:7px;border-radius:999px;background:rgba(180,202,220,.28);transition:width .2s ease,background .2s ease}
+.guide-dots i.on{width:20px;background:var(--mint)}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.05s!important}}
 </style>
 
@@ -373,7 +395,6 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
   <div id="hint">A / D 转向 · 空格 起跳 / 破水跃出 · 空中砸地 · 水中 S 深潜</div>
 </div>
 
-<button id="jumpbtn" aria-label="跳跃">跳</button>
 <div class="hud-actions" id="hud-actions">
   <button class="hud-act" id="fsbtn" aria-label="全屏">全屏</button>
   <button class="hud-act" id="landbtn" aria-label="横屏">横屏</button>
@@ -401,6 +422,7 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
       <div class="start-tools">
         <button class="tool-pill" id="btn-fs-start" type="button">全屏游玩</button>
         <button class="tool-pill" id="btn-land-start" type="button">切换横屏</button>
+        <button class="tool-pill" id="btn-guide-start" type="button">玩法导引</button>
       </div>
     </div>
   </div>
@@ -422,6 +444,19 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
         <button id="btn-menu">换个模式</button>
       </div>
       <p class="keyhint" id="o-key">按空格立刻再来</p>
+    </div>
+  </div>
+
+  <div class="screen" id="scr-guide">
+    <div class="wrap">
+      <p class="eyebrow">新手导引</p>
+      <h2>极地滑行手册</h2>
+      <div class="guide-card" id="guide-card"></div>
+      <div class="guide-dots" id="guide-dots"><i></i><i></i><i></i></div>
+      <div class="btns">
+        <button id="btn-guide-skip" type="button">跳过</button>
+        <button class="primary" id="btn-guide-next" type="button">下一步</button>
+      </div>
     </div>
   </div>
 
@@ -2048,9 +2083,9 @@ const ui = {
   divehud:$('divehud'), diveBar:document.querySelector('#ui-dive i'), toast:$('toast'),
   fev:$('ui-fev'), fevBar:document.querySelector('#ui-fev .fev-bar i'),
   hud:$('hud'), hint:$('hint'), flash:$('flash'), glow:$('glow'), uwtint:$('uwtint'), popups:$('popups'),
-  screens:$('screens'), scrStart:$('scr-start'), scrOver:$('scr-over'), scrPause:$('scr-pause'),
-  jump:$('jumpbtn'), hudActs:$('hud-actions'), mutebtn:$('mutebtn'), pause:$('pausebtn'), mute:$('btn-mute'),
-  fsbtn:$('fsbtn'), landbtn:$('landbtn'), btnFsStart:$('btn-fs-start'), btnLandStart:$('btn-land-start'),
+  screens:$('screens'), scrStart:$('scr-start'), scrOver:$('scr-over'), scrGuide:$('scr-guide'), scrPause:$('scr-pause'),
+  hudActs:$('hud-actions'), mutebtn:$('mutebtn'), pause:$('pausebtn'), mute:$('btn-mute'),
+  fsbtn:$('fsbtn'), landbtn:$('landbtn'), btnFsStart:$('btn-fs-start'), btnLandStart:$('btn-land-start'), btnGuideStart:$('btn-guide-start'),
   skinDots:$('skin-dots'), skinName:$('skin-name')
 };
 const isRotLand = ()=> document.body.classList.contains('rot-land');
@@ -2114,7 +2149,7 @@ function paintHearts(){
 }
 function showScreen(which){
   ui.screens.classList.toggle('on', !!which);
-  for(const s of [ui.scrStart,ui.scrOver,ui.scrPause]) s.classList.toggle('on', s===which);
+  for(const s of [ui.scrStart,ui.scrOver,ui.scrGuide,ui.scrPause]) s.classList.toggle('on', s===which);
 }
 const _pp = new THREE.Vector3();
 function popup(text,cls){
@@ -2214,7 +2249,6 @@ function startRun(){
   clearTimeout(hintTimer);
   hintTimer = setTimeout(()=>ui.hint.classList.add('fade'), 7500);
   ui.hudActs.classList.add('show');
-  if(isTouch) ui.jump.classList.add('show');
   Snd.init(); Snd.resume(); Snd.padTarget = 0.035;
   kick(4); J.happyT=0.8;
 }
@@ -2224,7 +2258,7 @@ function gameOver(quit){
   seal.flip.rotation.x = wrapPi(seal.flip.rotation.x);
   ui.hud.classList.add('off'); ui.uwtint.style.opacity=0; ui.glow.classList.remove('on'); ui.divehud.classList.remove('on');
   Snd.resume(); Snd.over(); Snd.padTarget = 0.05;
-  ui.jump.classList.remove('show'); ui.hudActs.classList.remove('show');
+  ui.hudActs.classList.remove('show');
   const score=Math.floor(S.score), prev=S.best, isBest = score>prev && score>0;
   if(isBest){ BEST[S.mode]=score; store.set('sealrush.best.'+S.mode, String(score)); }
   paintBest();
@@ -2246,7 +2280,7 @@ function toMenu(){
   S.state='attract'; S.camBlend=0;
   Object.assign(attractLook, {timer:0, pokes:0, hopT:0, hopY:0, hopVy:0, hopCrouch:0, tookOff:false, flipYaw:0, flipYaw0:0, ballT:0, ballDropT:0, ballCaught:false});
   resetRun(); showScreen(ui.scrStart); ui.hud.classList.add('off');
-  ui.jump.classList.remove('show'); ui.hudActs.classList.remove('show');
+  ui.hudActs.classList.remove('show');
   Snd.padTarget = 0.05;
 }
 function togglePause(){
@@ -2345,8 +2379,6 @@ function endDrag(e){
 }
 canvas.addEventListener('pointerup', endDrag);
 canvas.addEventListener('pointercancel', endDrag);
-ui.jump.addEventListener('pointerdown', e=>{ e.preventDefault(); ui.jump.classList.add('press'); tryJump(); });
-for(const ev of ['pointerup','pointercancel','pointerleave']) ui.jump.addEventListener(ev, ()=>ui.jump.classList.remove('press'));
 
 // 首页海豹互动（射线点击 + 光标注视）
 const raycaster = new THREE.Raycaster(), ptrNDC = new THREE.Vector2();
@@ -2422,7 +2454,64 @@ document.querySelectorAll('.mode').forEach(b=> b.addEventListener('click', ()=>{
   S.mode=b.dataset.mode; store.set('sealrush.mode',S.mode); paintModes(); paintBest();
   if(S.state==='attract') resetRun();                       // 背景立刻换成这个模式的赛道
 }));
-$('btn-go').addEventListener('click', startRun);
+const GUIDE_STEPS = [
+  {
+    badge: '1 / 3 · 基础操控',
+    title: '轻点起跳，下滑深潜',
+    items: [
+      ['↔️', '<b>左右拖动</b>：控制海豹左右转向（支持在首页开启体感倾斜）'],
+      ['👆', '<b>轻点屏幕</b>：在雪地起跳越过矮冰柱；在水中破水高跃'],
+      ['👇', '<b>向下滑动</b>：空中肚皮砸地清障；水中深潜躲避浮冰']
+    ]
+  },
+  {
+    badge: '2 / 3 · 速度与冰海',
+    title: '越滑越快，冰海自由穿行',
+    items: [
+      ['⚡', '<b>持续加速</b>：滑行距离越远，海豹速度越快，注意预判前方冰障'],
+      ['🌊', '<b>广阔冰海</b>：进入冰海默认水下潜行，轻点跃出翻跟头，下滑潜入深水'],
+      ['✨', '<b>擦边奖励</b>：贴近冰柱或浮冰掠过可获额外加分与狂热能量']
+    ]
+  },
+  {
+    badge: '3 / 3 · 狂热爆发',
+    title: '攒满能量，开启狂热模式',
+    items: [
+      ['🔥', '<b>狂热充能</b>：吃小鱼和擦边过障都会积攒右上角狂热条'],
+      ['🌟', '<b>无敌冲撞</b>：攒满触发狂热——四周闪耀极光，<b>速度飙升、得分翻倍、直接撞碎冰障</b>'],
+      ['🐟', '<b>吃鱼回血</b>：冲刺模式每吃 25 条小鱼可恢复 1 颗红心']
+    ]
+  }
+];
+let guideStep = 0, guideAutoStart = false;
+function paintGuide(){
+  const st = GUIDE_STEPS[guideStep];
+  $('guide-card').innerHTML = '<span class="guide-badge">' + st.badge + '</span><h3>' + st.title + '</h3>' +
+    '<ul class="guide-list">' + st.items.map(it=> '<li><span class="guide-ico">' + it[0] + '</span><span>' + it[1] + '</span></li>').join('') + '</ul>';
+  const dots = $('guide-dots').children;
+  for(let i=0;i<dots.length;i++) dots[i].classList.toggle('on', i===guideStep);
+  $('btn-guide-next').textContent = guideStep === GUIDE_STEPS.length - 1 ? (guideAutoStart ? '立即出发！' : '知道了') : '下一步';
+  $('btn-guide-skip').textContent = guideAutoStart ? '跳过直接玩' : '返回';
+}
+function openGuide(autoStart){
+  guideStep = 0; guideAutoStart = !!autoStart;
+  paintGuide(); showScreen(ui.scrGuide);
+}
+function closeGuide(){
+  store.set('sealrush.tut', '1');
+  if(guideAutoStart){ guideAutoStart = false; startRun(); }
+  else showScreen(ui.scrStart);
+}
+$('btn-guide-next').addEventListener('click', ()=>{
+  if(guideStep < GUIDE_STEPS.length - 1){ guideStep++; paintGuide(); }
+  else closeGuide();
+});
+$('btn-guide-skip').addEventListener('click', closeGuide);
+if(ui.btnGuideStart) ui.btnGuideStart.addEventListener('click', (e)=>{ e.stopPropagation(); openGuide(false); });
+$('btn-go').addEventListener('click', ()=>{
+  if(store.get('sealrush.tut','0') !== '1') openGuide(true);
+  else startRun();
+});
 $('btn-again').addEventListener('click', startRun);
 $('btn-menu').addEventListener('click', toMenu);
 $('btn-resume').addEventListener('click', togglePause);
