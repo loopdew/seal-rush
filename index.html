@@ -43,6 +43,23 @@ body{
   padding-left:max(16px,env(safe-area-inset-left,0px));
   padding-right:max(16px,env(safe-area-inset-right,0px));
 }
+body.rot-land{
+  position:fixed;top:0;left:0;width:100vh;height:100vw;
+  transform:rotate(90deg) translateY(-100%);transform-origin:top left;
+}
+body.rot-land #scr-start{
+  padding-left:max(6vw,16px);
+  background:linear-gradient(90deg,rgba(8,19,31,.92) 0%,rgba(8,19,31,.7) 30%,rgba(8,19,31,0) 64%);
+}
+body.rot-land #scr-start .wrap{margin:auto 0;align-items:flex-start;text-align:left}
+body.rot-land #scr-start .lede,body.rot-land #scr-start .controls{display:none}
+.start-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tool-pill{
+  padding:6px 13px;border-radius:999px;border:1px solid var(--line);background:var(--panel);
+  color:var(--ice-dim);font-size:12px;font-weight:600;letter-spacing:.06em;cursor:pointer;
+  transition:border-color .14s ease,color .14s ease,background .14s ease;
+}
+.tool-pill:hover,.tool-pill[aria-pressed="true"]{border-color:var(--mint);color:var(--ice);background:rgba(14,48,60,.82)}
 button{font-family:inherit}
 #gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 #flash,#glow,#uwtint{position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0}
@@ -358,6 +375,8 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
 
 <button id="jumpbtn" aria-label="跳跃">跳</button>
 <div class="hud-actions" id="hud-actions">
+  <button class="hud-act" id="fsbtn" aria-label="全屏">全屏</button>
+  <button class="hud-act" id="landbtn" aria-label="横屏">横屏</button>
   <button class="hud-act" id="mutebtn" aria-label="静音">声音：开</button>
   <button class="hud-act" id="pausebtn" aria-label="暂停">暂停</button>
 </div>
@@ -379,6 +398,10 @@ button:focus-visible{outline:2px solid var(--mint);outline-offset:3px}
       <button class="go" id="btn-go">开始下滑</button>
       <p class="controls" id="ctl-text">A / D 或 ← → 转向，空格跳跃 / 破水跃出，空中再按或 S 砸地，水中 S 深潜<br>擦边过障有奖励，M 键静音 · 轻点海豹可互动</p>
       <p class="best">最高分 <b id="ui-best2">0</b></p>
+      <div class="start-tools">
+        <button class="tool-pill" id="btn-fs-start" type="button">全屏游玩</button>
+        <button class="tool-pill" id="btn-land-start" type="button">切换横屏</button>
+      </div>
     </div>
   </div>
 
@@ -2027,8 +2050,61 @@ const ui = {
   hud:$('hud'), hint:$('hint'), flash:$('flash'), glow:$('glow'), uwtint:$('uwtint'), popups:$('popups'),
   screens:$('screens'), scrStart:$('scr-start'), scrOver:$('scr-over'), scrPause:$('scr-pause'),
   jump:$('jumpbtn'), hudActs:$('hud-actions'), mutebtn:$('mutebtn'), pause:$('pausebtn'), mute:$('btn-mute'),
+  fsbtn:$('fsbtn'), landbtn:$('landbtn'), btnFsStart:$('btn-fs-start'), btnLandStart:$('btn-land-start'),
   skinDots:$('skin-dots'), skinName:$('skin-name')
 };
+const isRotLand = ()=> document.body.classList.contains('rot-land');
+const viewW = ()=> isRotLand() ? window.innerHeight : window.innerWidth;
+const viewH = ()=> isRotLand() ? window.innerWidth : window.innerHeight;
+function viewPt(e){ return isRotLand() ? { x: e.clientY, y: window.innerWidth - e.clientX } : { x: e.clientX, y: e.clientY }; }
+const isFullscreen = ()=> !!(document.fullscreenElement || document.webkitFullscreenElement);
+function paintScreenBtns(){
+  const fs = isFullscreen(), rl = isRotLand();
+  if(ui.fsbtn) ui.fsbtn.textContent = fs ? '退出全屏' : '全屏';
+  if(ui.btnFsStart){ ui.btnFsStart.textContent = fs ? '退出全屏' : '全屏游玩'; ui.btnFsStart.setAttribute('aria-pressed', String(fs)); }
+  if(ui.landbtn) ui.landbtn.textContent = rl ? '竖屏' : '横屏';
+  if(ui.btnLandStart){ ui.btnLandStart.textContent = rl ? '切回竖屏' : '切换横屏'; ui.btnLandStart.setAttribute('aria-pressed', String(rl)); }
+}
+function toggleFullscreen(){
+  const el = document.documentElement;
+  if(isFullscreen()){
+    const ex = document.exitFullscreen || document.webkitExitFullscreen;
+    if(ex) try{ ex.call(document); }catch(e){}
+    return;
+  }
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if(!req){ toast('当前浏览器不支持全屏，可添加到主屏幕游玩'); return; }
+  try{
+    const p = req.call(el, { navigationUI: 'hide' });
+    if(p && p.catch) p.catch(()=>{ toast('全屏请求被拦截或不支持'); });
+  }catch(e){ toast('当前浏览器不支持全屏'); }
+}
+function toggleLandscape(){
+  if(isRotLand()){
+    document.body.classList.remove('rot-land');
+    try{ if(screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); }catch(e){}
+    onResize(); paintScreenBtns();
+    toast('已切回竖屏模式');
+    return;
+  }
+  if(window.innerWidth > window.innerHeight){
+    toast('当前已是横屏视角');
+    return;
+  }
+  const canNativeLock = isFullscreen() && screen.orientation && typeof screen.orientation.lock === 'function';
+  if(canNativeLock){
+    screen.orientation.lock('landscape').then(()=>{
+      onResize(); paintScreenBtns(); toast('已锁定横屏');
+    }, ()=>{
+      document.body.classList.add('rot-land'); onResize(); paintScreenBtns();
+      toast('已切换横屏模式 · 横握手机体验更佳');
+    });
+  }else{
+    document.body.classList.add('rot-land');
+    onResize(); paintScreenBtns();
+    toast('已切换横屏模式 · 横握手机体验更佳');
+  }
+}
 const fmt = n=> Math.floor(n).toLocaleString('en-US');
 const pick = arr=> arr[(Math.random()*arr.length)|0];
 for(let i=0;i<3;i++){ const d=document.createElement('div'); d.className='heart'; ui.hearts.appendChild(d); }
@@ -2045,10 +2121,11 @@ function popup(text,cls){
   if(ui.popups.childElementCount>16) return;
   _pp.copy(seal.root.position); _pp.y += 1.9; _pp.project(camera);
   if(_pp.z>1) return;
+  const vw=viewW(), vh=viewH();
   const el=document.createElement('div');
   el.className='pop'+(cls?' '+cls:''); el.textContent=text;
-  el.style.left=clamp((_pp.x*0.5+0.5)*window.innerWidth+(Math.random()-0.5)*70, 56, window.innerWidth-56)+'px';
-  el.style.top=clamp((-_pp.y*0.5+0.5)*window.innerHeight-Math.random()*22, 48, window.innerHeight-48)+'px';
+  el.style.left=clamp((_pp.x*0.5+0.5)*vw+(Math.random()-0.5)*70, 56, vw-56)+'px';
+  el.style.top=clamp((-_pp.y*0.5+0.5)*vh-Math.random()*22, 48, vh-48)+'px';
   ui.popups.appendChild(el);
   setTimeout(()=>el.remove(), cls==='chat' ? 1150 : 820);
 }
@@ -2247,15 +2324,16 @@ const drag = {active:false, id:null, sx:0, sy:0, t0:0, steer:0, moved:false, swi
 canvas.addEventListener('pointerdown', e=>{
   if(S.state!=='play') return;
   if(drag.active){ tryJump(); return; }                     // 第二根手指直接起跳
-  drag.active=true; drag.id=e.pointerId; drag.sx=e.clientX; drag.sy=e.clientY;
+  const pt=viewPt(e);
+  drag.active=true; drag.id=e.pointerId; drag.sx=pt.x; drag.sy=pt.y;
   drag.t0=performance.now(); drag.steer=0; drag.moved=false; drag.swipedDown=false;
   if(canvas.setPointerCapture) try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
 });
 canvas.addEventListener('pointermove', e=>{
   if(!drag.active || e.pointerId!==drag.id) return;
-  const dx=e.clientX-drag.sx, dy=e.clientY-drag.sy;
+  const pt=viewPt(e), dx=pt.x-drag.sx, dy=pt.y-drag.sy;
   if(Math.abs(dx)>14 || Math.abs(dy)>14) drag.moved=true;
-  drag.steer = clamp(dx/Math.max(60,window.innerWidth*0.15), -1, 1);
+  drag.steer = clamp(dx/Math.max(60,viewW()*0.15), -1, 1);
   if(!drag.swipedDown && dy>38 && Math.abs(dy)>Math.abs(dx)*1.15 && ((S.inWater && !S.air && S.deepT<DEEP_DUR*0.55) || (S.air && !S.slam))){
     drag.swipedDown = true; tryDive();
   }
@@ -2275,17 +2353,18 @@ const raycaster = new THREE.Raycaster(), ptrNDC = new THREE.Vector2();
 const _noseP = new THREE.Vector3(), _groundPl = new THREE.Plane(new THREE.Vector3(0,1,0), 0), _groundHit = new THREE.Vector3();
 ui.scrStart.addEventListener('pointermove', e=>{
   if(S.state!=='attract') return;
-  const portrait = window.innerWidth/window.innerHeight <= 1.15;
+  const pt=viewPt(e), vw=viewW(), vh=viewH(), portrait = vw/vh <= 1.15;
   const cx = portrait ? 0.5 : 0.68, cy = portrait ? 0.28 : 0.48;
-  attractLook.yaw = clamp(((e.clientX/window.innerWidth)-cx)*1.8, -0.95, 0.95);
-  attractLook.pitch = clamp((cy-e.clientY/window.innerHeight)*1.1, -0.35, 0.48);
+  attractLook.yaw = clamp(((pt.x/vw)-cx)*1.8, -0.95, 0.95);
+  attractLook.pitch = clamp((cy-pt.y/vh)*1.1, -0.35, 0.48);
   attractLook.timer = 2.2;
 });
 ui.scrStart.addEventListener('pointerdown', e=>{
   if(S.state!=='attract') return;
   if(e.target && e.target.closest && e.target.closest('button, a, .mode, .skin-chip, .skin-bar')) return;
   Snd.init(); Snd.resume();
-  ptrNDC.set((e.clientX/window.innerWidth)*2-1, -(e.clientY/window.innerHeight)*2+1);
+  const pt=viewPt(e), vw=viewW(), vh=viewH();
+  ptrNDC.set((pt.x/vw)*2-1, -(pt.y/vh)*2+1);
   raycaster.setFromCamera(ptrNDC, camera);
   seal.root.updateMatrixWorld(true);
   const hits = raycaster.intersectObjects(seal.hitTargets, false);
@@ -2351,6 +2430,12 @@ $('btn-quit').addEventListener('click', ()=>gameOver(true));
 ui.pause.addEventListener('click', togglePause);
 ui.mute.addEventListener('click', ()=>{ Snd.setMuted(!Snd.muted); paintMute(); });
 ui.mutebtn.addEventListener('click', ()=>{ Snd.setMuted(!Snd.muted); paintMute(); });
+if(ui.fsbtn) ui.fsbtn.addEventListener('click', toggleFullscreen);
+if(ui.btnFsStart) ui.btnFsStart.addEventListener('click', toggleFullscreen);
+if(ui.landbtn) ui.landbtn.addEventListener('click', toggleLandscape);
+if(ui.btnLandStart) ui.btnLandStart.addEventListener('click', toggleLandscape);
+document.addEventListener('fullscreenchange', ()=>{ paintScreenBtns(); onResize(); });
+document.addEventListener('webkitfullscreenchange', ()=>{ paintScreenBtns(); onResize(); });
 
 /* ============================================================
    14. 玩法
@@ -3008,7 +3093,7 @@ function updateCamera(dt){
   camY = damp(camY, camTargetY, 7, dt);
   const b = smooth(S.camBlend);
   const a0 = Math.sin(S.t*0.21)*0.8+0.2;
-  const w=window.innerWidth, hh=window.innerHeight, portrait = w/hh<=1.15;
+  const w=viewW(), hh=viewH(), portrait = w/hh<=1.15;
   const hu = (!play && attractLook.hopT>0) ? clamp(1-attractLook.hopT/attractLook.hopDur,0,1) : 0;
   const hopZoom = (!play && attractLook.hopT>0) ? Math.sin(hu*Math.PI)*0.85 + smooth(hu)*0.35
                 : (!play && attractLook.ballT>0) ? 0.35*smooth(clamp(attractLook.ballT/0.4,0,1)) : 0;
@@ -3184,7 +3269,7 @@ function frame(ms){
    16. 启动
    ============================================================ */
 function onResize(){
-  const w=window.innerWidth, h=window.innerHeight;
+  const w=viewW(), h=viewH();
   renderer.setSize(w,h,false);
   camera.aspect=w/h; camera.updateProjectionMatrix();
   if(S.state==='pause') renderer.render(scene,camera);
@@ -3199,7 +3284,7 @@ function start(saved){
     ui.hint.textContent='拖动转向 · 轻点起跳 / 破水跃出 · 下滑砸地 / 深潜';
     $('ctl-text').innerHTML='按住左右拖动转向，轻点起跳或破水跃出，下滑砸地或深潜<br>轻点海豹可互动';
   }
-  paintModes(); paintMute(); paintSky(true);
+  paintModes(); paintMute(); paintScreenBtns(); paintSky(true);
   onResize();
   resetRun();
   showScreen(ui.scrStart);
