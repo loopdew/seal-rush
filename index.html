@@ -47,12 +47,43 @@ body.rot-land{
   position:fixed;top:0;left:0;width:100vh;height:100vw;
   transform:rotate(90deg) translateY(-100%);transform-origin:top left;
 }
+body.rot-land .screen{
+  padding:14px max(48px,env(safe-area-inset-top,48px)) 14px max(28px,env(safe-area-inset-bottom,28px));
+}
+body.rot-land .btns button{padding:9px 12px;font-size:16px}
 body.rot-land #scr-start{
-  padding-left:max(6vw,16px);
+  padding-left:max(5vw,28px);
   background:linear-gradient(90deg,rgba(8,19,31,.92) 0%,rgba(8,19,31,.7) 30%,rgba(8,19,31,0) 64%);
 }
-body.rot-land #scr-start .wrap{margin:auto 0;align-items:flex-start;text-align:left}
+body.rot-land #scr-start .wrap{max-width:440px;margin:auto 0;gap:8px;align-items:flex-start;text-align:left}
+body.rot-land #scr-start h1{font-size:38px}
+body.rot-land #scr-start .mode{padding:8px 11px}
+body.rot-land #scr-start .go{padding:9px 22px;font-size:17px}
 body.rot-land #scr-start .lede,body.rot-land #scr-start .controls{display:none}
+body.rot-land #scr-over .wrap{
+  max-width:680px;display:grid;grid-template-columns:1.1fr 1fr;column-gap:22px;row-gap:6px;
+  align-items:center;text-align:left;
+}
+body.rot-land #scr-over .eyebrow,
+body.rot-land #scr-over h2,
+body.rot-land #scr-over .rows,
+body.rot-land #scr-over .rec{grid-column:1}
+body.rot-land #scr-over h2{font-size:28px}
+body.rot-land #scr-over .row{padding:6px 12px}
+body.rot-land #scr-over .row b{font-size:16px}
+body.rot-land #scr-over .btns{grid-column:2;grid-row:1 / span 3;align-self:end}
+body.rot-land #scr-over .over-xhs{grid-column:2;grid-row:4;justify-content:flex-start}
+body.rot-land #scr-over .keyhint{grid-column:1 / -1;text-align:center}
+body.rot-land #scr-guide .wrap{max-width:620px;gap:8px}
+body.rot-land #scr-guide h2{font-size:24px}
+body.rot-land #scr-guide .guide-card{padding:11px 15px;gap:7px}
+body.rot-land #scr-guide .guide-card h3{font-size:18px}
+body.rot-land #scr-guide .guide-list{gap:5px}
+body.rot-land #scr-guide .guide-list li{font-size:12px}
+body.rot-land #scr-rank .wrap{max-width:620px;gap:8px}
+body.rot-land #scr-rank h2{font-size:24px}
+body.rot-land #scr-rank .rank-list{max-height:125px}
+body.rot-land #scr-rank .rank-item{padding:6px 11px}
 .start-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .tool-pill{
   padding:6px 13px;border-radius:999px;border:1px solid var(--line);background:var(--panel);
@@ -2459,8 +2490,9 @@ const GUIDE_STEPS = [
     badge: '1 / 3 · 基础操控',
     title: '轻点起跳，下滑深潜',
     items: [
-      ['↔️', '<b>左右拖动</b>：控制海豹左右转向（支持在首页开启体感倾斜）'],
-      ['👆', '<b>轻点屏幕</b>：在雪地起跳越过矮冰柱；在水中破水高跃'],
+      ['↔️', '<b>左右拖动</b>：按住屏幕左右拖动即可转向'],
+      ['📱', '<b>体感转向</b>：在首页或暂停页开启「体感」，左右倾斜手机即可丝滑转向（横竖屏皆可用）'],
+      ['👆', '<b>轻点屏幕</b>：雪地起跳越过矮冰柱；水中破水高跃'],
       ['👇', '<b>向下滑动</b>：空中肚皮砸地清障；水中深潜躲避浮冰']
     ]
   },
