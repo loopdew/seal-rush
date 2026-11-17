@@ -1822,6 +1822,17 @@ S.mode = store.get('sealrush.mode','rush')==='zen' ? 'zen' : 'rush';
 { const sk=store.get('sealrush.skin','orange'); const idx=SKINS.findIndex(s=>s.id===sk); S.skin = idx>=0?idx:0; }
 const BEST = { rush: parseInt(store.get('sealrush.best.rush', store.get('sealrush.best','0')),10)||0,
                zen:  parseInt(store.get('sealrush.best.zen','0'),10)||0 };      // 两个模式各记各的
+function migrateBestScale(){
+  if(store.get('sealrush.sver','')==='2') return;
+  for(const k of ['rush','zen']){
+    if(BEST[k]>0){
+      BEST[k]=Math.min(999999, Math.max(1, Math.round(BEST[k]/10)));
+      store.set('sealrush.best.'+k, String(BEST[k]));
+    }
+  }
+  store.set('sealrush.sver','2');
+}
+migrateBestScale();
 S.best = BEST[S.mode];
 function paintBest(){ S.best=BEST[S.mode]; ui.best.textContent=fmt(S.best); ui.best2.textContent=fmt(S.best); }
 
@@ -2577,11 +2588,12 @@ function addFever(v){
     ring(S.x,S.y,S.z,9,0xFFC94A,0.6); emitBurst(S.x,S.y+0.9,S.z,30,0xFFC94A);
   }
 }
+const comboMult = ()=> 1 + (S.combo - 1) * 0.15;
 function eat(f){
   f.dead=true;
   S.comboT=2.8; S.combo=Math.min(S.combo+1,20); S.bestCombo=Math.max(S.bestCombo,S.combo);
   S.fish++;
-  const gain=Math.round((f.gold?60:10)*S.combo*(S.ball?1.5:1)*(S.fever>0?2:1));
+  const gain=Math.max(1, Math.round((f.gold?18:3)*comboMult()*(S.ball?1.5:1)*(S.fever>0?2:1)));
   S.score+=gain; Snd.coin(S.combo,f.gold);
   emitBurst(f.x, f.wy||S.y+1, f.z, f.gold?24:9, 0xFFC94A);
   popup((f.gold?'金鱼 +':'+')+gain, (f.gold||S.combo>=6)?'good':'');
@@ -2617,7 +2629,7 @@ function slamBlast(rad=SLAM_R, superSlam=false, waterBomb=false){
     if(dx*dx+dz*dz<fishR2 && (waterBomb || f.lift<2)) eat(f);
   }
   const mult = superSlam ? 1.8 : 1;
-  const bonus=Math.round((25+n*42)*S.combo*mult);
+  const bonus=Math.round((10+n*16)*comboMult()*mult);
   S.score+=bonus; addFever((superSlam?0.09:0.05)+n*0.06);
   const tag = waterBomb ? '鱼雷入水' : (superSlam ? '空翻暴砸' : '肚皮砸地');
   popup(n ? tag+' 碎×'+n+' +'+bonus : tag+' +'+bonus, waterBomb?'water':'good');
@@ -2644,7 +2656,7 @@ function land(groundY,play,v){
   if(S.flip){
     seal.flip.rotation.x -= TAU;
     if(play){
-      const bonus = Math.round((60+S.airT*90)*S.combo);
+      const bonus = Math.round((20+S.airT*28)*comboMult());
       S.score += bonus; Snd.flip(); popup('后空翻 +'+bonus,'good'); J.happyT=0.9; addFever(0.12);
     }
   }
@@ -2727,7 +2739,7 @@ function updateSeal(dt,t){
       }else{
         if(S.flip){
           seal.flip.rotation.x -= TAU;
-          if(play){ const b=Math.round(70*S.combo); S.score+=b; addFever(0.12); Snd.flip(); popup('花式入水 +'+b,'water'); }
+          if(play){ const b=Math.round(24*comboMult()); S.score+=b; addFever(0.12); Snd.flip(); popup('花式入水 +'+b,'water'); }
         }
         S.air=false; S.flip=false; S.rebound=false; S.superSlam=false; S.vy=0; S.airT=0;
         kick(-5); Snd.splash(false,true);
@@ -2761,7 +2773,7 @@ function updateSeal(dt,t){
         }else{
           if(S.flip){
             seal.flip.rotation.x -= TAU;
-            if(play){ const b=Math.round(65*S.combo); S.score+=b; addFever(0.1); Snd.flip(); popup('空翻入水 +'+b,'water'); J.happyT=0.8; }
+            if(play){ const b=Math.round(22*comboMult()); S.score+=b; addFever(0.1); Snd.flip(); popup('空翻入水 +'+b,'water'); J.happyT=0.8; }
           }
           Snd.splash(false,true); emitWaterSplash(S.x,w.waterY,S.z,22,1.15); ring(S.x,w.waterY,S.z,3.0,0xDDF6FF,0.38,0.48,true);
           emitBubbles(S.x,S.y-0.2,S.z,12);
@@ -2966,7 +2978,7 @@ function updateBall(dt,t){
     S.ballWob = Math.max(0, S.ballWob-dt*0.62);
     if(S.ballWob>WOB_MAX) dropBall('晃得太厉害，金球掉了');
     else{
-      S.score += (16+S.combo*2.2)*dt;
+      S.score += (6+S.combo*0.6)*dt;
       ui.wobBar.style.width = (S.ballWob/WOB_MAX*100)+'%';
       ui.wob.classList.toggle('warn', S.ballWob>1.15);
     }
@@ -3058,7 +3070,7 @@ function updatePickups(dt){
     if(dz>4.5 || dz<-5) continue;
     if(segDist2(ppx,ppz,px,pz,wr.x,wr.z)<5.8 && Math.abs((wr.wy||cy)-cy)<2.15){
       wr.used=true; chunksDirty=true; S.boost=1.65;
-      const b=Math.round(80*S.combo); S.score+=b; kick(4); J.happyT=0.6; Snd.bubble(); Snd.pad();
+      const b=Math.round(28*comboMult()); S.score+=b; kick(4); J.happyT=0.6; Snd.bubble(); Snd.pad();
       emitBurst(wr.x, wr.wy||cy, wr.z, 20, 0xA9DDF2); ring(wr.x, wr.wy||cy, wr.z, 4.2, 0xDDF6FF, 0.4, 0.6);
       popup('水流加速 +'+b,'water'); addFever(0.1);
     }
@@ -3076,9 +3088,9 @@ function updatePickups(dt){
         o.passed=true;
         if(!mag && S.inv<=0){
           if(!S.air && Math.abs(o.x-px)<o.r+2.1){
-            const b=Math.round(15*S.combo); S.score+=b; popup('擦边 +'+b,'good'); Snd.near(); addFever(0.08);
+            const b=Math.round(6*comboMult()); S.score+=b; popup('擦边 +'+b,'good'); Snd.near(); addFever(0.08);
           }else if(clearedTop && Math.abs(o.x-px)<o.r+1.3){
-            const b=Math.round(35*S.combo); S.score+=b; popup('飞跃 +'+b,'good'); Snd.near(); addFever(0.1);
+            const b=Math.round(14*comboMult()); S.score+=b; popup('飞跃 +'+b,'good'); Snd.near(); addFever(0.1);
           }
         }
         continue;
@@ -3086,7 +3098,7 @@ function updatePickups(dt){
       const rr=o.r+0.7;
       if(segDist2(ppx,ppz,px,pz,o.x,o.z)>=rr*rr) continue;
       if(clearedTop) continue;
-      if(mag){ smash(o); const b=Math.round(40*S.combo); S.score+=b; popup('撞碎 +'+b,'good'); S.hitstop=0.04; continue; }
+      if(mag){ smash(o); const b=Math.round(16*comboMult()); S.score+=b; popup('撞碎 +'+b,'good'); S.hitstop=0.04; continue; }
       if(S.inv>0) continue;
       onHit(o); return;
     }
@@ -3097,9 +3109,9 @@ function updatePickups(dt){
         o.passed=true;
         if(!mag && S.inv<=0){
           if(S.y >= o.topY+0.35 && Math.abs(o.x-px)<o.r+1.8){
-            const b=Math.round(35*S.combo); S.score+=b; popup('跃礁而过 +'+b,'water'); Snd.near(); addFever(0.1);
+            const b=Math.round(14*comboMult()); S.score+=b; popup('跃礁而过 +'+b,'water'); Snd.near(); addFever(0.1);
           }else if(Math.abs(o.x-px)<o.r+2.1){
-            const b=Math.round(25*S.combo); S.score+=b; popup('贴礁游过 +'+b,'water'); Snd.near(); addFever(0.08);
+            const b=Math.round(10*comboMult()); S.score+=b; popup('贴礁游过 +'+b,'water'); Snd.near(); addFever(0.08);
           }
         }
         continue;
@@ -3107,7 +3119,7 @@ function updatePickups(dt){
       if(S.y >= o.topY+0.35) continue;
       const rr=o.r+0.62;
       if(segDist2(ppx,ppz,px,pz,o.x,o.z)>=rr*rr) continue;
-      if(mag){ smash(o); const b=Math.round(45*S.combo); S.score+=b; popup('撞碎冰礁 +'+b,'water'); S.hitstop=0.04; continue; }
+      if(mag){ smash(o); const b=Math.round(18*comboMult()); S.score+=b; popup('撞碎冰礁 +'+b,'water'); S.hitstop=0.04; continue; }
       if(S.inv>0) continue;
       onHit(o); return;
     }
@@ -3118,16 +3130,16 @@ function updatePickups(dt){
       if(!o.passed && dz>1.4){
         o.passed=true;
         if(!mag && S.inv<=0 && Math.abs(o.x-px)<o.r+1.8){
-          if(underKeel){ const b=Math.round(30*S.combo); S.score+=b; popup('冰下潜过 +'+b,'water'); Snd.near(); addFever(0.09); }
-          else if(overCap){ const b=Math.round(35*S.combo); S.score+=b; popup('越冰而过 +'+b,'water'); Snd.near(); addFever(0.09); }
-          else{ const b=Math.round(20*S.combo); S.score+=b; popup('擦冰掠过 +'+b,'water'); Snd.near(); addFever(0.07); }
+          if(underKeel){ const b=Math.round(12*comboMult()); S.score+=b; popup('冰下潜过 +'+b,'water'); Snd.near(); addFever(0.09); }
+          else if(overCap){ const b=Math.round(14*comboMult()); S.score+=b; popup('越冰而过 +'+b,'water'); Snd.near(); addFever(0.09); }
+          else{ const b=Math.round(8*comboMult()); S.score+=b; popup('擦冰掠过 +'+b,'water'); Snd.near(); addFever(0.07); }
         }
         continue;
       }
       if(underKeel || overCap) continue;
       const rr=o.r+0.62;
       if(segDist2(ppx,ppz,px,pz,o.x,o.z)>=rr*rr) continue;
-      if(mag || S.slam){ smash(o); const b=Math.round(45*S.combo); S.score+=b; popup('碎悬冰 +'+b,'water'); S.hitstop=0.04; continue; }
+      if(mag || S.slam){ smash(o); const b=Math.round(18*comboMult()); S.score+=b; popup('碎悬冰 +'+b,'water'); S.hitstop=0.04; continue; }
       if(S.inv>0) continue;
       onHit(o); return;
     }
@@ -3138,14 +3150,14 @@ function updatePickups(dt){
     if(!fl.passed && dz>1.5){
       fl.passed=true;
       if(!mag && S.inv<=0 && S.air && S.y>wy+0.58 && Math.abs(fl.x-px)<fl.r+1.6){
-        const b=Math.round(30*S.combo); S.score+=b; popup('跃过浮冰 +'+b,'water'); Snd.near(); addFever(0.08);
+        const b=Math.round(12*comboMult()); S.score+=b; popup('跃过浮冰 +'+b,'water'); Snd.near(); addFever(0.08);
       }
       continue;
     }
     if(S.y < wy - 0.72 || S.y > wy + 0.58) continue;
     const rr=fl.r+0.62;
     if(segDist2(ppx,ppz,px,pz,fl.x,fl.z)>=rr*rr) continue;
-    if(mag || S.slam){ smash(fl); const b=Math.round(45*S.combo); S.score+=b; popup('碎浮冰 +'+b,'water'); S.hitstop=0.04; continue; }
+    if(mag || S.slam){ smash(fl); const b=Math.round(18*comboMult()); S.score+=b; popup('碎浮冰 +'+b,'water'); S.hitstop=0.04; continue; }
     if(S.inv>0) continue;
     onHit(fl); return;
   }
@@ -3272,7 +3284,7 @@ function frame(ms){
   if(play){
     updatePickups(dt);
     if(S.state==='play') updateBall(dt,S.t);
-    S.score += S.speed*dt*0.9*(S.fever>0?2:1);
+    S.score += S.speed*dt*0.25*(S.fever>0?2:1);
     if(S.inv>0) S.inv -= dt;
     if(S.fever>0){
       S.fever -= dt;
